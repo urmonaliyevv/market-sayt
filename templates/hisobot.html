@@ -1,39 +1,20 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold">📊 Savdo Hisoboti</h3>
-</div>
-
+<h3 class="fw-bold mb-4">📊 Savdo Tarixi</h3>
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <div class="card-header bg-white py-3 fw-bold border-0">Barcha amallar ro'yxati</div>
     <table class="table table-hover align-middle m-0">
         <thead class="table-light">
-            <tr>
-                <th>Sana</th>
-                <th>Mijoz</th>
-                <th>Mahsulot</th>
-                <th>Miqdor</th>
-                <th>Jami Summa</th>
-                <th>To'landi</th>
-                <th>Holat</th>
-            </tr>
+            <tr><th>Sana</th><th>Mijoz</th><th>Mahsulot</th><th>Jami</th><th>To'landi</th><th>Qoldiq</th></tr>
         </thead>
         <tbody>
             {% for s in sales %}
             <tr>
-                <td class="text-muted small">{{ s.date.strftime('%d.%m %H:%M') }}</td>
+                <td class="small text-muted">{{ s.date.strftime('%d.%m %H:%M') }}</td>
                 <td class="fw-bold">{{ s.customer_name }}</td>
-                <td>{{ s.product_name }}</td>
-                <td>{{ s.quantity }}</td>
-                <td class="fw-bold">{{ s.total_price | format_money }}</td>
+                <td>{{ s.product_name }} ({{ s.quantity }})</td>
+                <td>{{ s.total_price | format_money }}</td>
                 <td class="text-success">{{ s.paid_amount | format_money }}</td>
-                <td>
-                    {% if s.debt_amount > 0 %}
-                    <span class="badge bg-soft-danger text-danger rounded-pill">Qarz: {{ s.debt_amount | format_money }}</span>
-                    {% else %}
-                    <span class="badge bg-soft-success text-success rounded-pill">Yopilgan</span>
-                    {% endif %}
-                </td>
+                <td>{% if s.debt_amount > 0 %}<span class="badge bg-danger">Qarz: {{ s.debt_amount | format_money }}</span>{% else %}✅{% endif %}</td>
             </tr>
             {% endfor %}
         </tbody>
