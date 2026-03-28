@@ -5,13 +5,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'premium-market-key-2026'
+app.config['SECRET_KEY'] = 'premium-market-secure-2026'
 
-# Ma'lumotlar bazasi
+# Ma'lumotlar bazasi sozlamasi
 uri = os.getenv("DATABASE_URL")
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_premium_v3.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_premium_v4.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -38,8 +38,8 @@ class Sale(db.Model):
     product_name = db.Column(db.String(100))
     quantity = db.Column(db.Float)
     total_price = db.Column(db.Float)
-    paid_amount = db.Column(db.Float)
-    debt_amount = db.Column(db.Float)
+    paid_amount = db.Column(db.Float, default=0)
+    debt_amount = db.Column(db.Float, default=0)
     profit = db.Column(db.Float)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -70,8 +70,9 @@ def index():
 def register():
     if request.method == 'POST':
         user = User.query.filter_by(username=request.form['username']).first()
-        if user: return "Bu nom band!"
-        new_user = User(username=request.form['username'], password=generate_password_hash(request.form['password']))
+        if user: return "Bu foydalanuvchi nomi band!"
+        hashed_pw = generate_password_hash(request.form['password'])
+        new_user = User(username=request.form['username'], password=hashed_pw)
         db.session.add(new_user)
         db.session.commit()
         return redirect(url_for('login'))
@@ -94,7 +95,9 @@ def bulk_sell():
     items = data.get('items', [])
     paid = float(data.get('paid') or 0)
     customer = data.get('customer') or "Umumiy mijoz"
+    
     total_sum = sum(i['price'] * i['qty'] for i in items)
+    total_debt = max(0, total_sum - paid)
     
     for i, item in enumerate(items):
         p = Product.query.filter_by(id=item['id'], user_id=session['user_id']).first()
@@ -102,10 +105,14 @@ def bulk_sell():
             qty = float(item['qty'])
             p.stock -= qty
             sale = Sale(
-                customer_name=customer, product_name=p.name, quantity=qty,
-                total_price=qty * p.sell_price, paid_amount=paid if i == 0 else 0,
-                debt_amount=max(0, total_sum - paid) if i == 0 else 0,
-                profit=(p.sell_price - p.buy_price) * qty, user_id=session['user_id']
+                customer_name=customer,
+                product_name=p.name,
+                quantity=qty,
+                total_price=qty * p.sell_price,
+                paid_amount=paid if i == 0 else 0,
+                debt_amount=total_debt if i == 0 else 0,
+                profit=(p.sell_price - p.buy_price) * qty,
+                user_id=session['user_id']
             )
             db.session.add(sale)
     db.session.commit()
@@ -118,7 +125,8 @@ def ombor():
         p = Product(
             name=request.form['name'], category=request.form['category'],
             buy_price=float(request.form['buy_price']), sell_price=float(request.form['sell_price']),
-            stock=float(request.form['stock']), unit=request.form['unit'], user_id=session['user_id']
+            stock=float(request.form['stock']), unit=request.form['unit'], 
+            user_id=session['user_id']
         )
         db.session.add(p)
         db.session.commit()
@@ -152,16 +160,9 @@ def hisobot():
     net_profit = gross_profit - total_expenses
     stock_value = sum(p.stock * p.buy_price for p in products)
 
-    return render_template('hisobot.html', sales=sales[::-1], expenses=expenses[::-1],
+    return render_template('hisobot.html', sales=sales[::-1], 
                            total_sales=total_sales, net_profit=net_profit, 
                            total_expenses=total_expenses, stock_value=stock_value)
-
-@app.route('/add_expense', methods=['POST'])
-def add_expense():
-    new_exp = Expense(description=request.form['desc'], amount=float(request.form['amount']), user_id=session['user_id'])
-    db.session.add(new_exp)
-    db.session.commit()
-    return redirect(url_for('hisobot'))
 
 @app.route('/qarzlar')
 def qarzlar():
