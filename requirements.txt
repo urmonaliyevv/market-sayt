@@ -22,3 +22,4 @@ typing_extensions==4.15.0
 uvicorn==0.42.0
 Werkzeug==3.1.6
 gunicorn
+psycopg2-binary
