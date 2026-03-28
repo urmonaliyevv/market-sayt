@@ -5,17 +5,18 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Railway PostgreSQL yoki Lokal SQLite ulanishi
+# Railway ma'lumotlar bazasi ulanishi
 uri = os.getenv("DATABASE_URL")
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_final.db'
-app.config['SECRET_KEY'] = 'super-secret-key-2026'
+
+app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_pro_final.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'dev-secret-123'
 
 db = SQLAlchemy(app)
 
-# Summa formatlash: 18.000.000
+# Summa formatlash: 10.000
 @app.template_filter('format_money')
 def format_money(value):
     try:
@@ -47,7 +48,7 @@ class Sale(db.Model):
 with app.app_context():
     db.create_all()
 
-# --- ROUTES ---
+# --- YO'NALISHLAR ---
 @app.route('/')
 def index():
     search = request.args.get('search')
@@ -63,15 +64,33 @@ def ombor():
         new_p = Product(
             name=request.form['name'],
             category=request.form['category'],
-            buy_price=float(request.form['buy_price']),
-            sell_price=float(request.form['sell_price']),
-            stock=float(request.form['stock']),
-            unit=request.form['unit']
+            buy_price=float(request.form.get('buy_price', 0)),
+            sell_price=float(request.form.get('sell_price', 0)),
+            stock=float(request.form.get('stock', 0)),
+            unit=request.form.get('unit', 'dona')
         )
         db.session.add(new_p)
         db.session.commit()
         return redirect(url_for('ombor'))
     return render_template('ombor.html', products=Product.query.all())
+
+@app.route('/sell/<int:id>', methods=['POST'])
+def sell(id):
+    p = Product.query.get_or_404(id)
+    qty = float(request.form.get('qty', 0))
+    paid = float(request.form.get('paid', 0))
+    total = qty * p.sell_price
+    
+    sale = Sale(
+        customer_name=request.form.get('customer_name', 'Mijoz'),
+        product_name=p.name, quantity=qty, total_price=total,
+        paid_amount=paid, debt_amount=max(0, total - paid),
+        profit=(p.sell_price - p.buy_price) * qty
+    )
+    p.stock -= qty
+    db.session.add(sale)
+    db.session.commit()
+    return redirect(url_for('index'))
 
 @app.route('/edit/<int:id>', methods=['POST'])
 def edit_product(id):
@@ -84,23 +103,6 @@ def edit_product(id):
     p.unit = request.form['unit']
     db.session.commit()
     return redirect(url_for('ombor'))
-
-@app.route('/sell/<int:id>', methods=['POST'])
-def sell(id):
-    p = Product.query.get_or_404(id)
-    qty = float(request.form['qty'])
-    paid = float(request.form['paid'])
-    total = qty * p.sell_price
-    sale = Sale(
-        customer_name=request.form.get('customer_name'),
-        product_name=p.name, quantity=qty, total_price=total,
-        paid_amount=paid, debt_amount=max(0, total-paid),
-        profit=(p.sell_price - p.buy_price) * qty
-    )
-    p.stock -= qty
-    db.session.add(sale)
-    db.session.commit()
-    return redirect(url_for('index'))
 
 @app.route('/qarzlar')
 def qarzlar():
@@ -119,10 +121,11 @@ def pay_debt(id):
 @app.route('/hisobot')
 def hisobot():
     sales = Sale.query.all()
-    kassa = sum(s.paid_amount for s in sales)
-    debt = sum(s.debt_amount for s in sales)
-    prof = sum(s.profit for s in sales)
-    return render_template('hisobot.html', kassa=kassa, debt=debt, prof=prof, sales=sales[::-1])
+    return render_template('hisobot.html', 
+        kassa=sum(s.paid_amount for s in sales),
+        debt=sum(s.debt_amount for s in sales),
+        prof=sum(s.profit for s in sales),
+        sales=sales[::-1])
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
