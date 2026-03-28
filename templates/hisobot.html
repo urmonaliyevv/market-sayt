@@ -1,62 +1,52 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="row g-3 mb-4 text-white text-center">
+<h2 class="fw-bold mb-4 text-dark">📊 Moliyaviy Hisobot</h2>
+
+<div class="row g-4 mb-5">
     <div class="col-md-3">
-        <div class="card p-4 shadow border-0" style="background: linear-gradient(45deg, #4361ee, #4cc9f0);">
-            <small class="opacity-75">UMUMIY SAVDO</small>
+        <div class="card p-4 text-white" style="background: #4361ee;">
+            <small class="opacity-75 d-block mb-1">UMUMIY SAVDO</small>
             <h3 class="fw-bold m-0">{{ total_sales | format_money }}</h3>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card p-4 shadow border-0" style="background: linear-gradient(45deg, #2ec4b6, #cbf3f0);">
-            <small class="opacity-75">SOF FOYDA</small>
-            <h3 class="fw-bold m-0 text-dark">{{ net_profit | format_money }}</h3>
+        <div class="card p-4 text-white" style="background: #2ec4b6;">
+            <small class="opacity-75 d-block mb-1">SOF FOYDA</small>
+            <h3 class="fw-bold m-0">{{ net_profit | format_money }}</h3>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card p-4 shadow border-0" style="background: linear-gradient(45deg, #e71d36, #ff9f1c);">
-            <small class="opacity-75">XARAJATLAR</small>
+        <div class="card p-4 text-white" style="background: #e71d36;">
+            <small class="opacity-75 d-block mb-1">XARAJATLAR</small>
             <h3 class="fw-bold m-0">{{ total_expenses | format_money }}</h3>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card p-4 shadow border-0" style="background: linear-gradient(45deg, #011627, #fdfffc);">
-            <small class="opacity-75">OMBOR QIYMATI</small>
+        <div class="card p-4 text-white" style="background: #1a1d23;">
+            <small class="opacity-75 d-block mb-1">OMBOR QIYMATI</small>
             <h3 class="fw-bold m-0">{{ stock_value | format_money }}</h3>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-lg-8">
-        <div class="card shadow-sm p-4">
-            <h5 class="fw-bold mb-3">Savdolar Tarixi</h5>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead><tr><th>Sana</th><th>Mijoz</th><th>Summa</th><th>Foyda</th></tr></thead>
-                    <tbody>
-                        {% for s in sales %}
-                        <tr>
-                            <td>{{ s.date.strftime('%d.%m %H:%M') }}</td>
-                            <td>{{ s.customer_name }}</td>
-                            <td class="fw-bold">{{ s.total_price | format_money }}</td>
-                            <td class="text-success">+{{ s.profit | format_money }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4">
-        <div class="card p-4 shadow-sm mb-4">
-            <h6 class="fw-bold mb-3">💸 Chiqim Qo'shish</h6>
-            <form action="/add_expense" method="POST">
-                <input type="text" name="desc" class="form-control mb-2" placeholder="Xarajat nomi" required>
-                <input type="number" name="amount" class="form-control mb-3" placeholder="Summa" required>
-                <button class="btn btn-danger w-100 rounded-pill fw-bold">Saqlash</button>
-            </form>
-        </div>
+<div class="card shadow-sm">
+    <div class="card-header bg-white border-0 py-3"><h5 class="fw-bold m-0">Savdolar Tarixi</h5></div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="bg-light small">
+                <tr><th>SANA</th><th>MIJOZ</th><th>SUMMA</th><th class="text-success">FOYDA</th></tr>
+            </thead>
+            <tbody>
+                {% for s in sales %}
+                <tr>
+                    <td>{{ s.date.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td class="fw-bold">{{ s.customer_name }}</td>
+                    <td>{{ s.total_price | format_money }}</td>
+                    <td class="text-success fw-bold">+{{ s.profit | format_money }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}
