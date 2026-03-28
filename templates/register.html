@@ -1,125 +1,24 @@
-<!DOCTYPE html>
-<html lang="uz">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ro'yxatdan o'tish | POS System</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        body {
-            background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%);
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .register-card {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 450px;
-        }
-        .form-control {
-            border-radius: 10px;
-            padding: 12px;
-            border: 1px solid #e0e0e0;
-            background-color: #f8f9fa;
-        }
-        .form-control:focus {
-            box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
-            border-color: #1a237e;
-        }
-        .btn-register {
-            background: #1a237e;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            padding: 12px;
-            font-weight: 600;
-            transition: 0.3s;
-        }
-        .btn-register:hover {
-            background: #0d1440;
-            color: white;
-            transform: translateY(-2px);
-        }
-        .brand-logo {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #1a237e;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="register-card">
-        <div class="brand-logo">POS<span class="text-warning">SYSTEM</span></div>
-        <h5 class="text-center mb-4 fw-bold text-muted">Yangi do'kon ochish</h5>
-
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-danger p-2 small text-center">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-
-        <form action="/register" method="POST" onsubmit="return validateForm()">
-            <div class="mb-3">
-                <label class="small fw-bold text-secondary">FOYDALANUVCHI NOMI (LOGIN)</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-person"></i></span>
-                    <input type="text" name="username" class="form-control border-start-0" placeholder="Masalan: shohruh_market" required>
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-lg rounded-4 p-4">
+            <h3 class="fw-bold text-center mb-4">Ro'yxatdan o'tish</h3>
+            <form method="POST">
+                <div class="mb-3">
+                    <label class="small fw-bold text-muted">FOYDALANUVCHI NOMI</label>
+                    <input type="text" name="username" class="form-control rounded-3" required>
                 </div>
-            </div>
-
-            <div class="mb-3">
-                <label class="small fw-bold text-secondary">PAROL</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock"></i></span>
-                    <input type="password" name="password" id="pw" class="form-control border-start-0" placeholder="Kamida 6 ta belgi" required>
+                <div class="mb-4">
+                    <label class="small fw-bold text-muted">PAROL</label>
+                    <input type="password" name="password" class="form-control rounded-3" required>
                 </div>
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold rounded-pill">RO'YXATDAN O'TISH</button>
+            </form>
+            <div class="text-center mt-3">
+                <a href="{{ url_for('login') }}" class="text-decoration-none small">Akkauntingiz bormi? Kirish</a>
             </div>
-
-            <div class="mb-4">
-                <label class="small fw-bold text-secondary">PAROLNI TASDIQLASH</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-shield-check"></i></span>
-                    <input type="password" id="pw2" class="form-control border-start-0" placeholder="Parolni qayta yozing" required>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-register w-100 mb-3 shadow">RO'YXATDAN O'TISH</button>
-        </form>
-
-        <div class="text-center">
-            <span class="small text-muted">Akkountingiz bormi?</span>
-            <a href="/login" class="small fw-bold text-decoration-none" style="color: #1a237e;">Kirish</a>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-        function validateForm() {
-            const pw = document.getElementById('pw').value;
-            const pw2 = document.getElementById('pw2').value;
-
-            if (pw.length < 6) {
-                Swal.fire('Xato', 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak!', 'error');
-                return false;
-            }
-            if (pw !== pw2) {
-                Swal.fire('Xato', 'Parollar bir-biriga mos kelmadi!', 'error');
-                return false;
-            }
-            return true;
-        }
-    </script>
-</body>
-</html>
+</div>
+{% endblock %}
