@@ -2,18 +2,18 @@
 {% block content %}
 <div class="row g-4">
     <div class="col-lg-8">
-        <div class="card p-4 shadow-sm mb-4 border-0 rounded-4">
-            <div class="input-group mb-4 bg-light rounded-pill px-3 py-1">
+        <div class="card p-4 shadow-lg mb-4 border-0">
+            <div class="input-group mb-4 bg-dark rounded-pill px-3 py-1 border border-secondary">
                 <span class="input-group-text bg-transparent border-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" id="qidiruv" class="form-control bg-transparent border-0 py-2" placeholder="Mahsulotlarni qidirish...">
+                <input type="text" id="qidiruv" class="form-control bg-transparent border-0 py-2 text-white" placeholder="Mahsulotlarni qidirish...">
             </div>
             
             <div class="d-flex gap-2 overflow-auto pb-2" id="catBar">
-                <button class="btn btn-primary rounded-pill px-4 cat-btn shadow-sm" onclick="filterCat('all', this)">Hammasi</button>
+                <button class="btn btn-primary rounded-pill px-4 cat-btn" onclick="filterCat('all', this)">Hammasi</button>
                 {% set cats = [] %}
                 {% for p in products %}
                     {% if p.category and p.category not in cats %}
-                    <button class="btn btn-white border rounded-pill px-4 cat-btn shadow-sm" onclick="filterCat('{{p.category}}', this)">{{p.category}}</button>
+                    <button class="btn btn-outline-secondary rounded-pill px-4 cat-btn text-white" onclick="filterCat('{{p.category}}', this)">{{p.category}}</button>
                     {% if cats.append(p.category) %}{% endif %}
                     {% endif %}
                 {% endfor %}
@@ -23,14 +23,14 @@
         <div class="row g-3" id="productGrid">
             {% for p in products %}
             <div class="col-md-6 prod-item" data-name="{{p.name.lower()}}" data-cat="{{p.category}}">
-                <div class="card h-100 border-0 shadow-sm p-3 bg-white">
+                <div class="card h-100 p-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="flex-grow-1">
-                            <h6 class="fw-bold mb-1 text-dark">{{p.name}}</h6>
-                            <span class="badge bg-light text-primary rounded-pill px-3">{{p.stock}} {{p.unit}}</span>
+                            <h6 class="fw-bold mb-1">{{p.name}}</h6>
+                            <span class="badge bg-light">{{p.stock}} {{p.unit}}</span>
                         </div>
                         <div class="text-end">
-                            <div class="fw-bold text-primary fs-5 mb-2">{{p.sell_price|format_money}}</div>
+                            <div class="fw-bold fs-5 mb-2" style="color: var(--accent);">{{p.sell_price|format_money}}</div>
                             <button class="btn btn-primary rounded-circle shadow" style="width: 45px; height: 45px;" 
                                     onclick="askQuantity('{{p.id}}', '{{p.name}}', '{{p.sell_price}}', '{{p.stock}}', '{{p.unit}}')">
                                 <i class="bi bi-plus-lg"></i>
@@ -44,173 +44,38 @@
     </div>
 
     <div class="col-lg-4">
-        <div class="card shadow-lg p-4 sticky-top border-0 rounded-4" style="top: 90px;">
-            <h5 class="fw-bold mb-4"><i class="bi bi-cart3 text-primary me-2"></i>Savat</h5>
+        <div class="card shadow-2xl p-4 sticky-top border-0" style="top: 90px; border: 1px solid var(--accent) !important;">
+            <h5 class="fw-bold mb-4 text-white"><i class="bi bi-cart3 text-primary me-2"></i>Savat</h5>
             
-            <div id="cartItems" class="mb-4" style="max-height: 250px; overflow-y: auto; min-height: 100px;">
+            <div id="cartItems" class="mb-4" style="max-height: 250px; overflow-y: auto; min-height: 100px; color: #cbd5e1;">
                 <p class="text-center text-muted py-5 small">Savat bo'sh</p>
             </div>
             
-            <div class="bg-light rounded-4 p-3 mb-4">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Umumiy summa:</span>
-                    <span class="fw-bold fs-5 text-dark" id="totalVal">0</span>
+            <div class="rounded-4 p-3 mb-4" style="background: #334155;">
+                <div class="d-flex justify-content-between mb-2 text-white">
+                    <span>Jami summa:</span>
+                    <span class="fw-bold fs-5" id="totalVal">0</span>
                 </div>
-                <div class="d-flex justify-content-between text-danger border-top pt-2">
-                    <span class="small fw-bold">Qarz miqdori:</span>
+                <div class="d-flex justify-content-between text-warning border-top border-secondary pt-2">
+                    <span class="small fw-bold">Qolgan summa (Qarz):</span>
                     <span class="fw-bold" id="debtVal">0</span>
                 </div>
             </div>
 
             <div class="mb-3">
                 <label class="small fw-bold text-muted mb-1">TO'LANGAN SUMMA</label>
-                <input type="number" id="paidVal" class="form-control rounded-input shadow-sm" placeholder="Mijoz bergan pul" oninput="calculateDebt()">
+                <input type="number" id="paidVal" class="form-control rounded-input" placeholder="Mijoz bergan pul" oninput="calculateDebt()">
             </div>
             
             <div class="mb-4">
                 <label class="small fw-bold text-muted mb-1">MIJOZ ISMI</label>
-                <input type="text" id="custName" class="form-control rounded-input shadow-sm" placeholder="Ism familiya">
+                <input type="text" id="custName" class="form-control rounded-input" placeholder="Ism familiya">
             </div>
 
-            <button class="btn btn-primary w-100 py-3 fw-bold shadow" onclick="completeSale()">
-                YAKUNLASH
+            <button class="btn btn-primary w-100 py-3 fw-bold shadow-lg" onclick="completeSale()">
+                SAVDONI YAKUNLASH
             </button>
         </div>
     </div>
 </div>
-
-<script>
-let cart = [];
-
-// 1. Kategoriya filtri
-function filterCat(category, btn) {
-    document.querySelectorAll('.cat-btn').forEach(b => {
-        b.classList.remove('btn-primary');
-        b.classList.add('btn-white', 'border');
-    });
-    btn.classList.add('btn-primary');
-    btn.classList.remove('btn-white', 'border');
-    
-    document.querySelectorAll('.prod-item').forEach(item => {
-        const itemCat = item.getAttribute('data-cat');
-        item.style.display = (category === 'all' || itemCat === category) ? 'block' : 'none';
-    });
-}
-
-// 2. Miqdor so'rash
-function askQuantity(id, name, price, stock, unit) {
-    Swal.fire({
-        title: name,
-        text: `Omborda: ${stock} ${unit}`,
-        input: 'number',
-        inputValue: 1,
-        showCancelButton: true,
-        confirmButtonText: 'Qo\'shish',
-    }).then(res => {
-        if(res.isConfirmed && res.value > 0) {
-            addToCart(id, name, price, res.value, unit);
-        }
-    });
-}
-
-// 3. Savatga qo'shish
-function addToCart(id, name, price, qty, unit) {
-    let q = parseFloat(qty);
-    let item = cart.find(x => x.id == id);
-    if(item) {
-        item.qty += q;
-    } else {
-        cart.push({id, name, price: parseFloat(price), qty: q, unit});
-    }
-    renderCart();
-}
-
-// 4. Savatni ekranga chiqarish (MUHIM QISM)
-function renderCart() {
-    let h = ""; 
-    let total = 0;
-    
-    cart.forEach((x, index) => {
-        let sum = x.price * x.qty;
-        total += sum;
-        h += `
-        <div class="d-flex justify-content-between mb-3 align-items-center border-bottom pb-2">
-            <div>
-                <b class="d-block text-dark small">${x.name}</b>
-                <small class="text-muted">${x.qty} ${x.unit} x ${x.price.toLocaleString()}</small>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <span class="small fw-bold">${sum.toLocaleString()}</span>
-                <i class="bi bi-trash text-danger pointer" onclick="cart.splice(${index},1);renderCart()"></i>
-            </div>
-        </div>`;
-    });
-    
-    document.getElementById('cartItems').innerHTML = h || '<p class="text-center text-muted py-5 small">Savat bo\'sh</p>';
-    
-    // Jami summani formatlash va chiqarish
-    document.getElementById('totalVal').innerText = total.toLocaleString() + " so'm";
-    
-    // Qarzni hisoblashni chaqirish
-    calculateDebt();
-}
-
-// 5. Qarzni jonli hisoblash (TO'G'IRLANDI)
-function calculateDebt() {
-    // Jami summani matndan raqamga o'tkazamiz
-    let totalText = document.getElementById('totalVal').innerText;
-    let total = parseFloat(totalText.replace(/[^0-9.-]+/g, "")) || 0;
-    
-    // To'langan summani olamiz
-    let paid = parseFloat(document.getElementById('paidVal').value) || 0;
-    
-    // Qarzni hisoblaymiz
-    let debt = total - paid;
-    if (debt < 0) debt = 0;
-
-    // Ekranga chiqaramiz
-    const debtElement = document.getElementById('debtVal');
-    debtElement.innerText = debt.toLocaleString() + " so'm";
-    
-    // Agar qarz bo'lsa qizil rangda ko'rsatamiz
-    if (debt > 0) {
-        debtElement.classList.replace('text-dark', 'text-danger');
-    } else {
-        debtElement.classList.replace('text-danger', 'text-dark');
-    }
-}
-
-// 6. Sotuvni yakunlash
-function completeSale() {
-    if(cart.length == 0) return Swal.fire('Xato', 'Savat bo\'sh!', 'error');
-    
-    let totalText = document.getElementById('totalVal').innerText;
-    let total = parseFloat(totalText.replace(/[^0-9.-]+/g, "")) || 0;
-    let paid = parseFloat(document.getElementById('paidVal').value) || 0;
-    let customer = document.getElementById('custName').value;
-
-    if (total > paid && !customer) {
-        return Swal.fire('Diqqat', 'Qarz bo\'lsa mijoz ismini yozish shart!', 'warning');
-    }
-
-    fetch('/bulk_sell', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            items: cart, 
-            paid: paid, 
-            customer: customer || "Umumiy mijoz"
-        })
-    }).then(res => {
-        if(res.ok) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Sotildi!',
-                showConfirmButton: false,
-                timer: 1000
-            }).then(() => location.reload());
-        }
-    });
-}
-</script>
 {% endblock %}
