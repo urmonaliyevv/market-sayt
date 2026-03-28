@@ -1,50 +1,59 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
-        <div class="d-flex mb-4 gap-2">
-            <input id="searchProd" class="form-control form-control-lg rounded-pill shadow-sm" placeholder="Mahsulot qidirish...">
-        </div>
-        <div class="row g-3" id="productGrid">
-            {% for p in products %}
-            <div class="col-md-4 prod-item" data-name="{{p.name.lower()}}">
-                <div class="premium-card p-3 h-100 d-flex flex-column justify-content-between shadow-sm border-0" 
-                     onclick="addToCart('{{p.id}}', '{{p.name}}', '{{p.sell_price}}', '{{p.stock}}', '{{p.unit}}')">
-                    <div>
-                        <h6 class="fw-bold m-0 text-dark">{{p.name}}</h6>
-                        <small class="text-muted">{{p.category}}</small>
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white py-3 border-0">
+                <input id="qidiruv" class="form-control rounded-pill border-light bg-light" placeholder="🔍 Mahsulot qidirish...">
+            </div>
+            <div class="card-body p-0 overflow-auto" style="height: 70vh;">
+                <div class="list-group list-group-flush" id="productGrid">
+                    {% for p in products %}
+                    <div class="list-group-item list-group-item-action border-0 py-3 prod-item" 
+                         style="cursor: pointer;" data-name="{{p.name.lower()}}"
+                         onclick="addToCart('{{p.id}}', '{{p.name}}', '{{p.sell_price}}', '{{p.stock}}', '{{p.unit}}')">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-primary bg-opacity-10 text-primary rounded-3 px-3 py-2 fw-bold">
+                                    {{ p.name[0]|upper }}
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0 text-dark">{{ p.name }}</h6>
+                                    <small class="text-muted">{{ p.category }} | {{ p.stock }} {{ p.unit }} bor</small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="fw-bold text-primary">{{ p.sell_price | format_money }}</span><br>
+                                <small class="text-muted" style="font-size: 0.7rem;">so'm</small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <span class="fw-bold text-primary">{{p.sell_price|format_money}}</span>
-                        <span class="badge {% if p.stock > 0 %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
-                            {{p.stock}} {{p.unit}}
-                        </span>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
-            {% endfor %}
         </div>
     </div>
 
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-lg rounded-4 sticky-top" style="top: 80px;">
-            <div class="card-header bg-dark text-white py-3">
-                <h5 class="m-0"><i class="bi bi-cart3 me-2"></i> Savat</h5>
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-lg rounded-4 sticky-top" style="top: 20px;">
+            <div class="card-header bg-dark text-white py-3 d-flex justify-content-between">
+                <h5 class="m-0">🛒 Xarid Savati</h5>
+                <span class="badge bg-primary" id="cartCount">0</span>
             </div>
-            <div id="cartContent" class="card-body overflow-auto" style="max-height: 400px; min-height: 200px;">
+            <div id="cartContent" class="card-body overflow-auto" style="height: 300px;">
                 <p class="text-center text-muted mt-5">Savat bo'sh</p>
             </div>
-            <div class="card-footer bg-light p-3 border-0">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="fw-bold">Jami:</span>
+            <div class="card-footer bg-white border-0 p-4">
+                <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                    <span class="fs-5">Jami Summa:</span>
                     <h4 class="fw-bold text-primary m-0" id="totalDisplay">0</h4>
                 </div>
-                <div class="mb-2">
-                    <input type="number" id="paidInput" class="form-control mb-2" placeholder="To'langan summa">
-                    <input type="text" id="custInput" class="form-control" placeholder="Mijoz ismi (Qarz uchun)">
+                <div class="row g-2 mb-3">
+                    <div class="col-6"><input type="number" id="paidInput" class="form-control" placeholder="To'landi"></div>
+                    <div class="col-6"><input type="text" id="custInput" class="form-control" placeholder="Mijoz ismi"></div>
                 </div>
-                <button class="btn btn-primary w-100 py-3 fw-bold rounded-3" onclick="submitSale()">
-                    <i class="bi bi-printer me-2"></i> SOTISH VA TASDIQLASH
+                <button class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow" onclick="submitSale()">
+                    <i class="bi bi-printer-fill me-2"></i> SOTUVNI YAKUNLASH
                 </button>
             </div>
         </div>
@@ -54,11 +63,11 @@
 <script>
 let cart = [];
 function addToCart(id, name, price, stock, unit) {
-    if (stock <= 0) return Swal.fire('Omborda mahsulot qolmagan!');
+    if (stock <= 0) return Swal.fire('Mahsulot tugagan!');
     let item = cart.find(x => x.id == id);
     if (item) {
         if (item.qty < stock) item.qty++;
-        else return Swal.fire('Ombordagi miqdordan oshib bo\'lmaydi!');
+        else return Swal.fire('Zaxiradan ortiq sotib bo\'lmaydi');
     } else {
         cart.push({id: id, name: name, price: parseFloat(price), qty: 1});
     }
@@ -68,14 +77,15 @@ function renderCart() {
     let html = ""; let total = 0;
     cart.forEach(x => {
         total += (x.price * x.qty);
-        html += `<div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+        html += `<div class="d-flex justify-content-between align-items-center mb-3">
             <div style="flex:1"><b>${x.name}</b><br><small>${x.price.toLocaleString()} x ${x.qty}</small></div>
-            <div class="fw-bold me-2">${(x.price*x.qty).toLocaleString()}</div>
-            <button class="btn btn-sm text-danger" onclick="cart=cart.filter(i=>i.id!=${x.id});renderCart()"><i class="bi bi-x-circle"></i></button>
+            <div class="fw-bold me-3">${(x.price*x.qty).toLocaleString()}</div>
+            <i class="bi bi-trash text-danger" style="cursor:pointer" onclick="cart=cart.filter(i=>i.id!=${x.id});renderCart()"></i>
         </div>`;
     });
     document.getElementById('cartContent').innerHTML = html || '<p class="text-center text-muted mt-5">Savat bo\'sh</p>';
     document.getElementById('totalDisplay').innerText = total.toLocaleString() + " so'm";
+    document.getElementById('cartCount').innerText = cart.length;
 }
 function submitSale() {
     if (cart.length == 0) return;
@@ -87,13 +97,11 @@ function submitSale() {
             paid: document.getElementById('paidInput').value,
             customer: document.getElementById('custInput').value
         })
-    }).then(res => res.json()).then(data => {
-        if(data.status == 'success') {
-            Swal.fire('Sotuv bajarildi!', '', 'success').then(() => location.reload());
-        }
+    }).then(() => {
+        Swal.fire('Sotuv yakunlandi!', '', 'success').then(() => location.reload());
     });
 }
-document.getElementById('searchProd').addEventListener('input', e => {
+document.getElementById('qidiruv').addEventListener('input', e => {
     let v = e.target.value.toLowerCase();
     document.querySelectorAll('.prod-item').forEach(i => {
         i.style.display = i.dataset.name.includes(v) ? 'block' : 'none';
