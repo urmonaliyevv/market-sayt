@@ -1,149 +1,98 @@
 {% extends 'base.html' %}
 {% block content %}
-
-<div class="row mb-4 align-items-center">
-    <div class="col-md-6">
-        <h3 class="fw-bold m-0"><i class="bi bi-lightning-charge-fill text-warning"></i> Tezkor Sotuv</h3>
-    </div>
-    <div class="col-md-6">
-        <div class="position-relative">
-            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-            <input id="searchInput" class="form-control rounded-pill p-3 ps-5 border-0 shadow-sm" placeholder="Mahsulot nomini yozing...">
+<div class="row">
+    <div class="col-lg-8">
+        <input id="qidiruv" class="form-control form-control-lg mb-4 rounded-pill shadow-sm" placeholder="Mahsulot qidirish...">
+        <div class="row g-3">
+            {% for p in products %}
+            <div class="col-md-4 prod-card" data-name="{{p.name.lower()}}">
+                <div class="premium-card p-3 h-100 d-flex flex-column justify-content-between" onclick="add('{{p.id}}', '{{p.name}}', '{{p.sell_price}}', '{{p.stock}}')">
+                    <div>
+                        <h6 class="fw-bold m-0">{{p.name}}</h6>
+                        <small class="text-muted">{{p.category}}</small>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-end mt-3">
+                        <span class="fw-bold text-primary">{{p.sell_price|format_money}}</span>
+                        <span class="badge {% if p.stock > 0 %}bg-success{% else %}bg-danger{% endif %}">{{p.stock}} {{p.unit}}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
         </div>
     </div>
-</div>
 
-<div class="row g-3" id="productGrid">
-    {% for p in products %}
-    <div class="col-12 col-md-6 col-lg-4 product-item" data-name="{{ p.name.lower() }}">
-        <div class="premium-card p-3 d-flex justify-content-between align-items-center {% if p.stock <= 0 %}opacity-50 border-danger{% endif %}" 
-             {% if p.stock > 0 %} onclick="openSell('{{p.id}}', '{{p.name}}', '{{p.sell_price}}', '{{p.stock}}', '{{p.unit}}')" {% endif %}>
-            
-            <div class="d-flex align-items-center gap-3">
-                <div class="bg-primary bg-opacity-10 text-primary rounded-4 d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px; font-size: 1.2rem;">
-                    {{ p.name[0]|upper }}
-                </div>
-                <div>
-                    <h6 class="fw-bold m-0 text-dark">{{ p.name }}</h6>
-                    {% if p.stock > 5 %}
-                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill small" style="font-size: 0.7rem;">{{ p.stock }} {{ p.unit }} bor</span>
-                    {% elif p.stock > 0 %}
-                        <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill small" style="font-size: 0.7rem;">Kam qoldi: {{ p.stock }}</span>
-                    {% else %}
-                        <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill small" style="font-size: 0.7rem;">Tugagan</span>
-                    {% endif %}
-                </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-lg rounded-4 cart-sticky">
+            <div class="card-header bg-white py-3 fw-bold fs-5 border-0">🛒 Xarid Savati</div>
+            <div id="savatBox" class="card-body overflow-auto" style="max-height: 350px;">
+                <p class="text-center text-muted">Savat bo'sh...</p>
             </div>
-
-            <div class="text-end">
-                <div class="fw-bold text-dark">{{ p.sell_price | format_money }}</div>
-                <small class="text-muted" style="font-size: 0.7rem;">so'm</small>
+            <div class="card-footer bg-white border-0 p-3">
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="fs-5">Jami:</span>
+                    <span id="jamiSum" class="fs-4 fw-bold text-primary">0</span>
+                </div>
+                <input type="number" id="to'landi" class="form-control mb-2" placeholder="To'lov summasi">
+                <input type="text" id="mijoz" class="form-control mb-3" placeholder="Mijoz ismi">
+                <button class="btn btn-primary w-100 py-3 fw-bold shadow" onclick="finish()">SOTISH VA CHEK</button>
             </div>
         </div>
-    </div>
-    {% else %}
-    <div class="col-12 text-center py-5">
-        <p class="text-muted">Hozircha mahsulotlar yo'q. Avval omborga mahsulot qo'shing.</p>
-    </div>
-    {% endfor %}
-</div>
-
-<div class="modal fade" id="sellModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <form id="sellForm" method="POST" class="modal-content p-4 rounded-4 border-0 shadow-lg">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="fw-bold m-0"><i class="bi bi-cart-plus me-2 text-primary"></i>Sotuv oynasi</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            
-            <div class="p-3 rounded-4 mb-4" style="background: #f8fafc; border: 1px dashed #cbd5e1;">
-                <h6 class="m-0 fw-bold text-dark" id="m_name"></h6>
-                <div class="d-flex justify-content-between mt-1">
-                    <small class="text-muted">Donasi: <span id="m_price_display"></span> so'm</small>
-                    <small class="fw-bold text-primary" id="m_stock_display"></small>
-                </div>
-            </div>
-
-            <div class="row g-3">
-                <div class="col-6">
-                    <label class="small fw-bold mb-1 text-secondary text-uppercase">Soni</label>
-                    <input type="number" step="0.1" name="qty" id="qty" class="form-control form-control-lg rounded-3 border-0 bg-light" placeholder="0.0" required oninput="calc()">
-                </div>
-                <div class="col-6">
-                    <label class="small fw-bold mb-1 text-secondary text-uppercase">To'lov</label>
-                    <input type="number" name="paid" id="paid" class="form-control form-control-lg rounded-3 border-0 bg-light" placeholder="0" required oninput="calc()">
-                </div>
-                <div class="col-12">
-                    <label class="small fw-bold mb-1 text-secondary text-uppercase">Mijoz (ixtiyoriy)</label>
-                    <input type="text" name="customer_name" class="form-control rounded-3 border-0 bg-light" placeholder="Mijoz ismi...">
-                </div>
-            </div>
-
-            <div class="mt-4 p-3 rounded-4 bg-primary bg-opacity-10">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="text-secondary small">Jami summa:</span>
-                    <span class="fw-bold fs-5 text-dark"><span id="m_total">0</span> so'm</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-danger small">Qolayotgan qarz:</span>
-                    <span class="fw-bold text-danger"><span id="m_debt">0</span> so'm</span>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100 mt-4 py-3 rounded-3 fw-bold shadow-sm" style="background: #6366f1;">
-                Sotuvni yakunlash
-            </button>
-        </form>
     </div>
 </div>
 
 <script>
-let pricePerUnit = 0;
-let maxStock = 0;
+let savat = [];
 
-function openSell(id, name, price, stock, unit) {
-    pricePerUnit = price;
-    maxStock = stock;
-    document.getElementById('m_name').innerText = name;
-    document.getElementById('m_price_display').innerText = parseFloat(price).toLocaleString('de-DE');
-    document.getElementById('m_stock_display').innerText = "Omborda: " + stock + " " + unit;
-    document.getElementById('qty').value = "";
-    document.getElementById('paid').value = "";
-    document.getElementById('m_total').innerText = "0";
-    document.getElementById('m_debt').innerText = "0";
-    document.getElementById('sellForm').action = '/sell/' + id;
-    new bootstrap.Modal(document.getElementById('sellModal')).show();
-}
-
-function calc() {
-    let q = document.getElementById('qty').value || 0;
-    let p = document.getElementById('paid').value || 0;
-    
-    // Ombor qoldig'idan oshib ketmaslik
-    if (parseFloat(q) > maxStock) {
-        Swal.fire({
-            title: 'Ogohlantirish!',
-            text: 'Omborda buncha mahsulot yo\'q!',
-            icon: 'warning',
-            confirmButtonColor: '#6366f1'
-        });
-        document.getElementById('qty').value = maxStock;
-        q = maxStock;
+function add(id, name, price, stock) {
+    if(stock <= 0) return Swal.fire('Omborda mahsulot yo\'q!');
+    let bor = savat.find(x => x.id == id);
+    if(bor) {
+        if(bor.qty < stock) bor.qty++;
+    } else {
+        savat.push({id:id, name:name, price:parseFloat(price), qty:1});
     }
-
-    let total = q * pricePerUnit;
-    document.getElementById('m_total').innerText = total.toLocaleString('de-DE');
-    document.getElementById('m_debt').innerText = Math.max(0, total - p).toLocaleString('de-DE');
+    render();
 }
 
-// JONLI QIDIRUV
-document.getElementById('searchInput').addEventListener('input', function(e) {
-    let val = e.target.value.toLowerCase();
-    document.querySelectorAll('.product-item').forEach(item => {
-        let name = item.getAttribute('data-name');
-        item.style.display = name.includes(val) ? 'block' : 'none';
+function remove(id) {
+    savat = savat.filter(x => x.id != id);
+    render();
+}
+
+function render() {
+    let h = ""; let total = 0;
+    savat.forEach(x => {
+        total += x.price * x.qty;
+        h += `<div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                <div><b>${x.name}</b><br><small>${x.price.toLocaleString()} x ${x.qty}</small></div>
+                <div class="text-end"><b>${(x.price*x.qty).toLocaleString()}</b><br>
+                <i class="bi bi-trash text-danger pointer" onclick="remove(${x.id})"></i></div>
+              </div>`;
+    });
+    document.getElementById('savatBox').innerHTML = h || '<p class="text-center text-muted">Savat bo\'sh...</p>';
+    document.getElementById('jamiSum').innerText = total.toLocaleString();
+}
+
+function finish() {
+    if(savat.length == 0) return;
+    fetch('/bulk_sell', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            items: savat,
+            paid: document.getElementById('to\'landi').value,
+            customer: document.getElementById('mijoz').value
+        })
+    }).then(() => {
+        Swal.fire('Muvaffaqiyatli!', '', 'success').then(() => location.reload());
+    });
+}
+
+document.getElementById('qidiruv').addEventListener('input', e => {
+    let v = e.target.value.toLowerCase();
+    document.querySelectorAll('.prod-card').forEach(c => {
+        c.style.display = c.dataset.name.includes(v) ? 'block' : 'none';
     });
 });
 </script>
-
 {% endblock %}
