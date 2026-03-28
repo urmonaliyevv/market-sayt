@@ -5,24 +5,23 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'pos-pro-2026-ultimate'
+app.config['SECRET_KEY'] = 'pos-pro-2026-premium'
 
-# Baza sozlamalari
+# Ma'lumotlar bazasi
 uri = os.getenv("DATABASE_URL")
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_final.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_premium.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# --- MODELLAR ---
+# MODELLAR
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     products = db.relationship('Product', backref='owner', lazy=True)
-    sales = db.relationship('Sale', backref='owner', lazy=True)
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -53,7 +52,7 @@ with app.app_context():
 def format_money(value):
     return "{:,.0f}".format(value or 0).replace(',', '.')
 
-# --- AUTH ---
+# --- YO'NALISHLAR ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -62,15 +61,15 @@ def login():
             session['user_id'] = user.id
             session['username'] = user.username
             return redirect(url_for('index'))
-        flash('Xato!')
+        flash('Xato login yoki parol!')
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        hashed_pw = generate_password_hash(request.form['password'])
-        new_user = User(username=request.form['username'], password=hashed_pw)
-        db.session.add(new_user)
+        user = User(username=request.form['username'], 
+                    password=generate_password_hash(request.form['password']))
+        db.session.add(user)
         db.session.commit()
         return redirect(url_for('login'))
     return render_template('register.html')
@@ -80,7 +79,6 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# --- ASOSIY ---
 @app.route('/')
 def index():
     if 'user_id' not in session: return redirect(url_for('login'))
@@ -93,9 +91,9 @@ def bulk_sell():
     data = request.get_json()
     items = data.get('items', [])
     paid = float(data.get('paid') or 0)
-    customer = data.get('customer') or "Mijoz"
+    customer = data.get('customer') or "Umumiy mijoz"
     
-    total_cart_sum = sum(i['price'] * i['qty'] for i in items)
+    total_sum = sum(i['price'] * i['qty'] for i in items)
     
     for i, item in enumerate(items):
         p = Product.query.get(item['id'])
@@ -106,7 +104,7 @@ def bulk_sell():
                 customer_name=customer, product_name=p.name,
                 quantity=qty, total_price=qty * p.sell_price,
                 paid_amount=paid if i == 0 else 0,
-                debt_amount=max(0, total_cart_sum - paid) if i == 0 else 0,
+                debt_amount=max(0, total_sum - paid) if i == 0 else 0,
                 profit=(p.sell_price - p.buy_price) * qty,
                 user_id=session['user_id']
             )
@@ -118,13 +116,10 @@ def bulk_sell():
 def ombor():
     if 'user_id' not in session: return redirect(url_for('login'))
     if request.method == 'POST':
-        new_p = Product(
-            name=request.form['name'], category=request.form['category'],
-            buy_price=float(request.form['buy_price']), sell_price=float(request.form['sell_price']),
-            stock=float(request.form['stock']), unit=request.form['unit'],
-            user_id=session['user_id']
-        )
-        db.session.add(new_p)
+        p = Product(name=request.form['name'], category=request.form['category'],
+                    buy_price=float(request.form['buy_price']), sell_price=float(request.form['sell_price']),
+                    stock=float(request.form['stock']), unit=request.form['unit'], user_id=session['user_id'])
+        db.session.add(p)
         db.session.commit()
         return redirect(url_for('ombor'))
     products = Product.query.filter_by(user_id=session['user_id']).all()
@@ -148,16 +143,6 @@ def qarzlar():
     if 'user_id' not in session: return redirect(url_for('login'))
     debts = Sale.query.filter(Sale.user_id == session['user_id'], Sale.debt_amount > 0).all()
     return render_template('qarzlar.html', debts=debts)
-
-@app.route('/pay_debt/<int:id>', methods=['POST'])
-def pay_debt(id):
-    s = Sale.query.get_or_404(id)
-    if s.user_id == session['user_id']:
-        pay = float(request.form['pay_val'])
-        s.debt_amount = max(0, s.debt_amount - pay)
-        s.paid_amount += pay
-        db.session.commit()
-    return redirect(url_for('qarzlar'))
 
 @app.route('/hisobot')
 def hisobot():
