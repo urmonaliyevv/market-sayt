@@ -117,10 +117,60 @@ def qarzlar():
     debts = Sale.query.filter(Sale.user_id == session['user_id'], Sale.debt_amount > 0).all()
     return render_template('qarzlar.html', debts=debts)
 
+
+
+# Yangi model: Umumiy xarajatlar (ijara, svet, oylik va h.k.)
+class Expense(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column(db.String(200))
+    amount = db.Column(db.Float, default=0)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+# ... (boshqa kodlar o'zgarishsiz qoladi) ...
+
 @app.route('/hisobot')
 def hisobot():
-    sales = Sale.query.filter_by(user_id=session['user_id']).order_by(Sale.date.desc()).all()
-    return render_template('hisobot.html', sales=sales)
+    if 'user_id' not in session: return redirect(url_for('login'))
+    uid = session['user_id']
+    
+    sales = Sale.query.filter_by(user_id=uid).all()
+    expenses = Expense.query.filter_by(user_id=uid).all()
+    products = Product.query.filter_by(user_id=uid).all()
+
+    total_sales = sum(s.total_price for s in sales)      # Umumiy savdo (Kirim bo'lishi kerak bo'lgan summa)
+    total_received = sum(s.paid_amount for s in sales)   # Haqiqiy tushgan pul (Kassa)
+    total_debt = sum(s.debt_amount for s in sales)       # Ko'chadagi qarzlar
+    
+    # Sof foyda: (Sotish narxi - Kelish narxi) - Umumiy xarajatlar
+    gross_profit = sum(s.profit for s in sales)
+    total_expenses = sum(e.amount for e in expenses)
+    net_profit = gross_profit - total_expenses
+    
+    # Ombor qiymati (Kelish narxida)
+    stock_value = sum(p.stock * p.buy_price for p in products)
+
+    return render_template('hisobot.html', 
+                           sales=sales[::-1], 
+                           expenses=expenses[::-1],
+                           total_sales=total_sales,
+                           total_received=total_received,
+                           total_debt=total_debt,
+                           net_profit=net_profit,
+                           total_expenses=total_expenses,
+                           stock_value=stock_value)
+
+# Xarajat qo'shish uchun yo'nalish
+@app.route('/add_expense', methods=['POST'])
+def add_expense():
+    if 'user_id' not in session: return redirect(url_for('login'))
+    desc = request.form.get('desc')
+    amt = float(request.form.get('amount') or 0)
+    if amt > 0:
+        new_exp = Expense(description=desc, amount=amt, user_id=session['user_id'])
+        db.session.add(new_exp)
+        db.session.commit()
+    return redirect(url_for('hisobot'))
 
 if __name__ == '__main__':
     app.run(debug=True)
