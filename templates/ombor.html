@@ -3,7 +3,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="fw-bold m-0 text-dark">📦 Ombor</h3>
     <button class="btn btn-premium shadow-sm" data-bs-toggle="modal" data-bs-target="#addModal">
-        <i class="bi bi-plus-lg"></i>  Yangi mahsulot qo'shish
+        <i class="bi bi-plus-lg"></i> + Yangi mahsulot
     </button>
 </div>
 
@@ -12,16 +12,14 @@
     <div class="col-12">
         <div class="premium-card p-3 d-flex justify-content-between align-items-center shadow-sm">
             <div class="d-flex align-items-center gap-3">
-                <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px;">
-                    {{ p.name[0]|upper }}
-                </div>
+                <div class="bg-primary text-white p-3 rounded-3 fw-bold">{{ p.name[0]|upper }}</div>
                 <div>
                     <h6 class="fw-bold m-0">{{ p.name }}</h6>
                     <small class="text-muted">{{ p.category }} | {{ p.stock }} {{ p.unit }}</small>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <div class="text-end">
+                <div class="text-end me-2">
                     <small class="text-muted d-block" style="font-size: 0.7rem;">SOTISH:</small>
                     <span class="fw-bold">{{ p.sell_price | format_money }}</span>
                 </div>
@@ -38,16 +36,16 @@
 <div class="modal fade" id="addModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <form action="/ombor" method="POST" class="modal-content p-4 rounded-4 border-0 shadow-lg">
-            <h5 class="fw-bold mb-3">Yangi mahsulot</h5>
+            <h5 class="fw-bold mb-3">Yangi mahsulot qo'shish</h5>
             <div class="row g-2">
                 <div class="col-12 mb-2"><input name="name" class="form-control" placeholder="Nomi" required></div>
                 <div class="col-6 mb-2"><input name="category" class="form-control" placeholder="Kategoriya"></div>
                 <div class="col-6 mb-2"><input name="unit" class="form-control" placeholder="Birlik (dona/kg)"></div>
                 <div class="col-6 mb-2"><label class="small">Kelish narxi</label><input type="number" name="buy_price" class="form-control" required></div>
                 <div class="col-6 mb-2"><label class="small">Sotish narxi</label><input type="number" name="sell_price" class="form-control" required></div>
-                <div class="col-12"><label class="small">Soni</label><input type="number" step="0.1" name="stock" class="form-control" required></div>
+                <div class="col-12"><label class="small">Mavjud soni</label><input type="number" step="0.1" name="stock" class="form-control" required></div>
             </div>
-            <button class="btn btn-premium w-100 mt-4">Saqlash</button>
+            <button type="submit" class="btn btn-premium w-100 mt-4">Saqlash</button>
         </form>
     </div>
 </div>
@@ -64,7 +62,7 @@
                 <div class="col-6 mb-2"><label class="small">Sotish</label><input type="number" name="sell_price" id="e_sell" class="form-control"></div>
                 <div class="col-12"><label class="small">Soni</label><input type="number" step="0.1" name="stock" id="e_stock" class="form-control"></div>
             </div>
-            <button class="btn btn-premium w-100 mt-4">Yangilash</button>
+            <button type="submit" class="btn btn-premium w-100 mt-4">Yangilash</button>
         </form>
     </div>
 </div>
