@@ -77,6 +77,28 @@ def login():
             return redirect(url_for('index'))
     return render_template('login.html')
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        # Foydalanuvchi allaqachon mavjudligini tekshirish
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            return "Bu foydalanuvchi nomi band! Boshqa nom tanlang."
+        
+        # Parolni xavfsiz (hash) ko'rinishga o'tkazish
+        hashed_pw = generate_password_hash(password)
+        
+        new_user = User(username=username, password=hashed_pw)
+        db.session.add(new_user)
+        db.session.commit()
+        
+        return redirect(url_for('login'))
+    
+    return render_template('register.html')
+
 @app.route('/bulk_sell', methods=['POST'])
 def bulk_sell():
     data = request.get_json()
