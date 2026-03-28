@@ -5,13 +5,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'pos-pro-system-2026'
+app.config['SECRET_KEY'] = 'pos-pro-2026-secure'
 
-# Baza ulanishi
+# Ma'lumotlar bazasi sozlamalari (Railway uchun moslangan)
 uri = os.getenv("DATABASE_URL")
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_multi_user.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_v3.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -49,12 +49,12 @@ class Sale(db.Model):
 with app.app_context():
     db.create_all()
 
-# --- FILTRLAR ---
+# --- FILTR ---
 @app.template_filter('format_money')
 def format_money(value):
     return "{:,.0f}".format(value or 0).replace(',', '.')
 
-# --- AUTH (KIRISH-CHIQISH) ---
+# --- AUTH ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -76,7 +76,7 @@ def register():
             db.session.commit()
             return redirect(url_for('login'))
         except:
-            flash('Bu foydalanuvchi nomi band!')
+            flash('Bu foydalanuvchi nomi allaqachon mavjud!')
     return render_template('register.html')
 
 @app.route('/logout')
@@ -84,7 +84,7 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# --- ASOSIY ---
+# --- ASOSIY SOTUV (POS) ---
 @app.route('/')
 def index():
     if 'user_id' not in session: return redirect(url_for('login'))
@@ -101,16 +101,18 @@ def bulk_sell():
     
     total_cart_sum = sum(i['price'] * i['qty'] for i in items)
     
-    for item in items:
+    for i, item in enumerate(items):
         p = Product.query.get(item['id'])
         if p and p.user_id == session['user_id']:
             qty = float(item['qty'])
             p.stock -= qty
+            
+            # Qarzni birinchi mahsulotga yozish
             sale = Sale(
                 customer_name=customer, product_name=p.name,
                 quantity=qty, total_price=qty * p.sell_price,
-                paid_amount=paid if items.index(item) == 0 else 0, # To'lovni birinchi qatorga yozamiz
-                debt_amount=max(0, total_cart_sum - paid) if items.index(item) == 0 else 0,
+                paid_amount=paid if i == 0 else 0,
+                debt_amount=max(0, total_cart_sum - paid) if i == 0 else 0,
                 profit=(p.sell_price - p.buy_price) * qty,
                 user_id=session['user_id']
             )
@@ -118,6 +120,7 @@ def bulk_sell():
     db.session.commit()
     return jsonify({"status": "success"})
 
+# --- OMBOR ---
 @app.route('/ombor', methods=['GET', 'POST'])
 def ombor():
     if 'user_id' not in session: return redirect(url_for('login'))
@@ -134,6 +137,39 @@ def ombor():
     products = Product.query.filter_by(user_id=session['user_id']).all()
     return render_template('ombor.html', products=products)
 
+@app.route('/edit/<int:id>', methods=['POST'])
+def edit_product(id):
+    if 'user_id' not in session: return redirect(url_for('login'))
+    p = Product.query.get_or_404(id)
+    if p.user_id == session['user_id']:
+        p.name = request.form['name']
+        p.category = request.form['category']
+        p.buy_price = float(request.form['buy_price'])
+        p.sell_price = float(request.form['sell_price'])
+        p.stock = float(request.form['stock'])
+        p.unit = request.form['unit']
+        db.session.commit()
+    return redirect(url_for('ombor'))
+
+# --- QARZLAR ---
+@app.route('/qarzlar')
+def qarzlar():
+    if 'user_id' not in session: return redirect(url_for('login'))
+    debts = Sale.query.filter(Sale.user_id == session['user_id'], Sale.debt_amount > 0).all()
+    return render_template('qarzlar.html', debts=debts)
+
+@app.route('/pay_debt/<int:id>', methods=['POST'])
+def pay_debt(id):
+    if 'user_id' not in session: return redirect(url_for('login'))
+    s = Sale.query.get_or_404(id)
+    if s.user_id == session['user_id']:
+        pay = float(request.form['pay_val'])
+        s.debt_amount = max(0, s.debt_amount - pay)
+        s.paid_amount += pay
+        db.session.commit()
+    return redirect(url_for('qarzlar'))
+
+# --- HISOBOT ---
 @app.route('/hisobot')
 def hisobot():
     if 'user_id' not in session: return redirect(url_for('login'))
