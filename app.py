@@ -5,13 +5,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'pos-pro-2026-secure'
+app.config['SECRET_KEY'] = 'pos-pro-2026-ultimate'
 
-# Ma'lumotlar bazasi sozlamalari (Railway uchun moslangan)
+# Baza sozlamalari
 uri = os.getenv("DATABASE_URL")
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_v3.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_final.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -49,7 +49,6 @@ class Sale(db.Model):
 with app.app_context():
     db.create_all()
 
-# --- FILTR ---
 @app.template_filter('format_money')
 def format_money(value):
     return "{:,.0f}".format(value or 0).replace(',', '.')
@@ -63,7 +62,7 @@ def login():
             session['user_id'] = user.id
             session['username'] = user.username
             return redirect(url_for('index'))
-        flash('Login yoki parol xato!')
+        flash('Xato!')
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -71,12 +70,9 @@ def register():
     if request.method == 'POST':
         hashed_pw = generate_password_hash(request.form['password'])
         new_user = User(username=request.form['username'], password=hashed_pw)
-        try:
-            db.session.add(new_user)
-            db.session.commit()
-            return redirect(url_for('login'))
-        except:
-            flash('Bu foydalanuvchi nomi allaqachon mavjud!')
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect(url_for('login'))
     return render_template('register.html')
 
 @app.route('/logout')
@@ -84,7 +80,7 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# --- ASOSIY SOTUV (POS) ---
+# --- ASOSIY ---
 @app.route('/')
 def index():
     if 'user_id' not in session: return redirect(url_for('login'))
@@ -97,7 +93,7 @@ def bulk_sell():
     data = request.get_json()
     items = data.get('items', [])
     paid = float(data.get('paid') or 0)
-    customer = data.get('customer') or "Umumiy mijoz"
+    customer = data.get('customer') or "Mijoz"
     
     total_cart_sum = sum(i['price'] * i['qty'] for i in items)
     
@@ -106,8 +102,6 @@ def bulk_sell():
         if p and p.user_id == session['user_id']:
             qty = float(item['qty'])
             p.stock -= qty
-            
-            # Qarzni birinchi mahsulotga yozish
             sale = Sale(
                 customer_name=customer, product_name=p.name,
                 quantity=qty, total_price=qty * p.sell_price,
@@ -120,7 +114,6 @@ def bulk_sell():
     db.session.commit()
     return jsonify({"status": "success"})
 
-# --- OMBOR ---
 @app.route('/ombor', methods=['GET', 'POST'])
 def ombor():
     if 'user_id' not in session: return redirect(url_for('login'))
@@ -139,9 +132,8 @@ def ombor():
 
 @app.route('/edit/<int:id>', methods=['POST'])
 def edit_product(id):
-    if 'user_id' not in session: return redirect(url_for('login'))
     p = Product.query.get_or_404(id)
-    if p.user_id == session['user_id']:
+    if p.user_id == session.get('user_id'):
         p.name = request.form['name']
         p.category = request.form['category']
         p.buy_price = float(request.form['buy_price'])
@@ -151,7 +143,6 @@ def edit_product(id):
         db.session.commit()
     return redirect(url_for('ombor'))
 
-# --- QARZLAR ---
 @app.route('/qarzlar')
 def qarzlar():
     if 'user_id' not in session: return redirect(url_for('login'))
@@ -160,7 +151,6 @@ def qarzlar():
 
 @app.route('/pay_debt/<int:id>', methods=['POST'])
 def pay_debt(id):
-    if 'user_id' not in session: return redirect(url_for('login'))
     s = Sale.query.get_or_404(id)
     if s.user_id == session['user_id']:
         pay = float(request.form['pay_val'])
@@ -169,7 +159,6 @@ def pay_debt(id):
         db.session.commit()
     return redirect(url_for('qarzlar'))
 
-# --- HISOBOT ---
 @app.route('/hisobot')
 def hisobot():
     if 'user_id' not in session: return redirect(url_for('login'))
@@ -181,5 +170,4 @@ def hisobot():
         sales=sales[::-1])
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
