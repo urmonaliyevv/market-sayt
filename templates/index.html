@@ -2,15 +2,28 @@
 {% block content %}
 <div class="row g-4">
     <div class="col-lg-8">
+        <div class="d-flex gap-2 mb-3 overflow-auto pb-2" id="categoryFilters">
+            <button class="btn btn-dark rounded-pill px-4 active-cat" onclick="filterCat('all')">Hammasi</button>
+            {% set cats = [] %}
+            {% for p in products %}
+                {% if p.category not in cats %}
+                    <button class="btn btn-outline-dark rounded-pill px-4" onclick="filterCat('{{p.category}}')">{{p.category}}</button>
+                    {% if cats.append(p.category) %}{% endif %}
+                {% endif %}
+            {% endfor %}
+        </div>
+
         <input id="qidiruv" class="form-control form-control-lg mb-4 rounded-4 shadow-sm" placeholder="Mahsulot qidirish...">
+        
         <div class="list-group shadow-sm rounded-4 overflow-hidden" id="productGrid">
             {% for p in products %}
             <div class="list-group-item list-group-item-action border-0 py-3 prod-item" 
                  onclick="addToCart('{{p.id}}', '{{p.name}}', '{{p.sell_price}}', '{{p.stock}}')"
-                 data-name="{{p.name.lower()}}" style="cursor: pointer;">
+                 data-name="{{p.name.lower()}}" data-cat="{{p.category}}" style="cursor: pointer;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="fw-bold mb-1">{{p.name}}</h6>
+                        <small class="text-muted">{{p.category}}</small> | 
                         <span class="badge {% if p.stock > 0 %}bg-info text-dark{% else %}bg-danger{% endif %}">{{p.stock}} {{p.unit}}</span>
                     </div>
                     <span class="fw-bold text-primary fs-5">{{p.sell_price|format_money}} so'm</span>
@@ -21,63 +34,66 @@
     </div>
 
     <div class="col-lg-4">
-        <div class="card border-0 shadow-lg rounded-4">
+        <div class="card border-0 shadow-lg rounded-4 sticky-top" style="top: 20px;">
             <div class="card-header bg-dark text-white py-3 fw-bold">🛒 Savat</div>
             <div id="cartItems" class="card-body overflow-auto" style="height: 350px;">
                 <p class="text-center text-muted mt-5">Savat bo'sh</p>
             </div>
             <div class="card-footer bg-white border-0 p-3">
-                <div class="d-flex justify-content-between mb-3"><span class="fs-5">Jami:</span><h4 class="fw-bold text-primary m-0" id="jami">0</h4></div>
-                <input type="number" id="paid" class="form-control mb-2" placeholder="To'lov">
+                <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                    <span class="fs-5">Jami:</span>
+                    <h4 class="fw-bold text-primary m-0" id="jami">0</h4>
+                </div>
+                <input type="number" id="paid" class="form-control mb-2" placeholder="To'lov summasi">
                 <input type="text" id="cust" class="form-control mb-3" placeholder="Mijoz ismi">
-                <button class="btn btn-primary w-100 py-3 fw-bold rounded-3" onclick="finish()">SOTISH VA CHEK CHIQARISH</button>
+                <button class="btn btn-primary w-100 py-3 fw-bold rounded-3" onclick="finish()">SOTISH VA CHEK</button>
             </div>
         </div>
     </div>
 </div>
 
-<div id="receipt" style="display: none;">
-    <style>
-        @media print { body * { visibility: hidden; } #receipt, #receipt * { visibility: visible; } #receipt { position: absolute; left: 0; top: 0; width: 100%; } }
-        .receipt-box { width: 80mm; font-family: monospace; padding: 10px; }
-        .text-center { text-align: center; }
-        .border-t { border-top: 1px dashed #000; margin: 10px 0; }
-    </style>
-    <div class="receipt-box">
-        <h3 class="text-center">MARKET PRO</h3>
-        <p class="text-center">Sana: <span id="r_date"></span></p>
-        <p>Mijoz: <span id="r_cust"></span></p>
-        <div class="border-t"></div>
-        <div id="r_items"></div>
-        <div class="border-t"></div>
-        <h4 class="text-center" id="r_total"></h4>
-        <p class="text-center">Xaridingiz uchun rahmat!</p>
-    </div>
-</div>
-
 <script>
 let cart = [];
+
+function filterCat(cat) {
+    const items = document.querySelectorAll('.prod-item');
+    items.forEach(item => {
+        if (cat === 'all' || item.dataset.cat === cat) {
+            item.style.setProperty('display', 'block', 'important');
+        } else {
+            item.style.setProperty('display', 'none', 'important');
+        }
+    });
+}
+
 function addToCart(id, name, price, stock) {
-    if(stock <= 0) return Swal.fire('Omborda yo\'q');
+    if(parseFloat(stock) <= 0) return Swal.fire('Omborda mahsulot qolmagan!');
     let item = cart.find(x => x.id == id);
-    if(item) item.qty++;
-    else cart.push({id:id, name:name, price:parseFloat(price), qty:1});
+    if(item) {
+        if(item.qty < stock) item.qty++;
+        else return Swal.fire('Ombor qoldig\'idan ko\'p sotib bo\'lmaydi');
+    } else {
+        cart.push({id:id, name:name, price:parseFloat(price), qty:1});
+    }
     render();
 }
+
 function render() {
     let h = ""; let t = 0;
     cart.forEach(x => {
         t += x.price * x.qty;
-        h += `<div class="d-flex justify-content-between mb-2">
-            <div><b>${x.name}</b><br><small>${x.qty} x ${x.price.toLocaleString()}</small></div>
-            <i class="bi bi-trash text-danger" onclick="cart=cart.filter(i=>i.id!=${x.id});render()"></i>
+        h += `<div class="d-flex justify-content-between align-items-center mb-3">
+            <div style="flex:1"><b>${x.name}</b><br><small>${x.qty} x ${x.price.toLocaleString()}</small></div>
+            <div class="fw-bold me-2">${(x.price*x.qty).toLocaleString()}</div>
+            <i class="bi bi-trash text-danger" style="cursor:pointer" onclick="cart=cart.filter(i=>i.id!=${x.id});render()"></i>
         </div>`;
     });
     document.getElementById('cartItems').innerHTML = h || '<p class="text-center text-muted mt-5">Savat bo\'sh</p>';
     document.getElementById('jami').innerText = t.toLocaleString() + " so'm";
 }
+
 function finish() {
-    if(cart.length == 0) return;
+    if(cart.length == 0) return Swal.fire('Savat bo\'sh!');
     const paid = document.getElementById('paid').value;
     const cust = document.getElementById('cust').value || "Umumiy mijoz";
     
@@ -85,23 +101,19 @@ function finish() {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({items: cart, paid: paid, customer: cust})
-    }).then(() => {
-        printReceipt(cust, paid);
-        Swal.fire('Sotildi!', '', 'success').then(() => location.reload());
+    }).then(res => res.json()).then(data => {
+        if(data.status == 'success') {
+            window.print(); // Chek chiqarish
+            Swal.fire('Muvaffaqiyatli!', '', 'success').then(() => location.reload());
+        }
     });
 }
-function printReceipt(cust, paid) {
-    let itemsH = "";
-    cart.forEach(x => itemsH += `<p>${x.name}<br>${x.qty} x ${x.price.toLocaleString()} = ${(x.qty*x.price).toLocaleString()}</p>`);
-    document.getElementById('r_items').innerHTML = itemsH;
-    document.getElementById('r_cust').innerText = cust;
-    document.getElementById('r_date').innerText = new Date().toLocaleString();
-    document.getElementById('r_total').innerText = "JAMI: " + document.getElementById('jami').innerText;
-    window.print();
-}
+
 document.getElementById('qidiruv').addEventListener('input', e => {
     let v = e.target.value.toLowerCase();
-    document.querySelectorAll('.prod-item').forEach(i => i.style.display = i.dataset.name.includes(v) ? 'block' : 'none');
+    document.querySelectorAll('.prod-item').forEach(i => {
+        i.style.display = i.dataset.name.includes(v) ? 'block' : 'none';
+    });
 });
 </script>
 {% endblock %}
