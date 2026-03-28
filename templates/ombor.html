@@ -1,99 +1,89 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold">📦 Ombor Zahirasi</h3>
-    <div class="d-flex gap-2">
-        <input id="sOmbor" class="form-control rounded-pill border-0 shadow-sm" placeholder="Qidirish...">
-        <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addModal">+ Yangi</button>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 bg-primary text-white p-3">
+            <small class="opacity-75">Umumiy Savdo (Kirim)</small>
+            <h4 class="fw-bold m-0">{{ total_sales | format_money }}</h4>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 bg-success text-white p-3">
+            <small class="opacity-75">Sof Foyda</small>
+            <h4 class="fw-bold m-0">{{ net_profit | format_money }}</h4>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 bg-danger text-white p-3">
+            <small class="opacity-75">Xarajatlar (Chiqim)</small>
+            <h4 class="fw-bold m-0">{{ total_expenses | format_money }}</h4>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 bg-dark text-white p-3">
+            <small class="opacity-75">Ombor Qiymati</small>
+            <h4 class="fw-bold m-0">{{ stock_value | format_money }}</h4>
+        </div>
     </div>
 </div>
 
-<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-    <table class="table table-hover align-middle m-0">
-        <thead class="bg-light">
-            <tr>
-                <th class="ps-4">Mahsulot</th>
-                <th class="text-center">Sotish</th>
-                <th class="text-center">Qoldiq</th>
-                <th class="text-center">Amal</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for p in products %}
-            <tr class="o-item" data-name="{{p.name.lower()}}">
-                <td class="ps-4 py-3">
-                    <div class="fw-bold">{{p.name}}</div>
-                    <small class="text-muted">{{p.category}}</small>
-                </td>
-                <td class="text-center fw-bold text-primary">{{p.sell_price|format_money}}</td>
-                <td class="text-center">
-                    <span class="badge {% if p.stock > 0 %}bg-soft-success text-success{% else %}bg-soft-danger text-danger{% endif %} rounded-pill">
-                        {{p.stock}} {{p.unit}}
-                    </span>
-                </td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-light border rounded-pill px-3" 
-                            onclick="openEdit('{{p.id}}','{{p.name}}','{{p.category}}','{{p.buy_price}}','{{p.sell_price}}','{{p.stock}}','{{p.unit}}')">
-                        Tahrirlash
-                    </button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<div class="modal fade" id="editModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <form id="editForm" method="POST" class="modal-content border-0 rounded-4 p-4 shadow-lg">
-            <h5 class="fw-bold mb-4">Mahsulotni tahrirlash</h5>
-            <div class="row g-3">
-                <div class="col-12"><input name="name" id="e_name" class="form-control border-light" placeholder="Nomi" required></div>
-                <div class="col-6"><input type="number" name="buy_price" id="e_buy" class="form-control border-light" placeholder="Kelish"></div>
-                <div class="col-6"><input type="number" name="sell_price" id="e_sell" class="form-control border-light" placeholder="Sotish"></div>
-                <div class="col-6"><input type="number" step="0.1" name="stock" id="e_stock" class="form-control border-light" placeholder="Soni"></div>
-                <div class="col-6"><input name="unit" id="e_unit" class="form-control border-light" placeholder="Birlik"></div>
-                <div class="col-12"><input name="category" id="e_cat" class="form-control border-light" placeholder="Kategoriya"></div>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white py-3 fw-bold">🛒 Savdolar Tarixi</div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle m-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Sana</th>
+                            <th>Mijoz</th>
+                            <th>Jami</th>
+                            <th>Foyda</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in sales %}
+                        <tr>
+                            <td><small>{{ s.date.strftime('%d.%m %H:%M') }}</small></td>
+                            <td>{{ s.customer_name }}</td>
+                            <td class="fw-bold">{{ s.total_price | format_money }}</td>
+                            <td class="text-success">+{{ s.profit | format_money }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <button type="submit" class="btn btn-primary w-100 mt-4 py-2 rounded-pill fw-bold">YANGILASH</button>
-        </form>
+        </div>
     </div>
-</div>
 
-<div class="modal fade" id="addModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <form action="/ombor" method="POST" class="modal-content border-0 rounded-4 p-4 shadow-lg">
-            <h5 class="fw-bold mb-4">Yangi mahsulot</h5>
-            <div class="row g-3">
-                <div class="col-12"><input name="name" class="form-control" placeholder="Nomi" required></div>
-                <div class="col-6"><input name="category" class="form-control" placeholder="Kategoriya"></div>
-                <div class="col-6"><input name="unit" class="form-control" placeholder="Birlik"></div>
-                <div class="col-6"><label class="small text-muted">Kelish</label><input type="number" name="buy_price" class="form-control" required></div>
-                <div class="col-6"><label class="small text-muted">Sotish</label><input type="number" name="sell_price" class="form-control" required></div>
-                <div class="col-12"><label class="small text-muted">Zahira soni</label><input type="number" step="0.1" name="stock" class="form-control" required></div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white py-3 fw-bold">💸 Chiqim Qo'shish</div>
+            <div class="card-body">
+                <form action="/add_expense" method="POST">
+                    <input type="text" name="desc" class="form-control mb-2" placeholder="Nima uchun? (Masalan: Ijara)" required>
+                    <input type="number" name="amount" class="form-control mb-3" placeholder="Summa" required>
+                    <button class="btn btn-danger w-100 rounded-pill">Chiqimni saqlash</button>
+                </form>
             </div>
-            <button class="btn btn-dark w-100 mt-4 py-2 rounded-pill fw-bold">SAQLASH</button>
-        </form>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white py-3 fw-bold">📜 So'nggi xarajatlar</div>
+            <ul class="list-group list-group-flush">
+                {% for e in expenses %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold small">{{ e.description }}</div>
+                        <small class="text-muted">{{ e.date.strftime('%d.%m') }}</small>
+                    </div>
+                    <span class="text-danger fw-bold">-{{ e.amount | format_money }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
 </div>
 
-<script>
-function openEdit(id, n, c, b, s, st, u) {
-    document.getElementById('e_name').value = n;
-    document.getElementById('e_cat').value = c;
-    document.getElementById('e_buy').value = b;
-    document.getElementById('e_sell').value = s;
-    document.getElementById('e_stock').value = st;
-    document.getElementById('e_unit').value = u;
-    document.getElementById('editForm').action = '/edit/' + id;
-    new bootstrap.Modal(document.getElementById('editModal')).show();
-}
-
-document.getElementById('sOmbor').addEventListener('input', e => {
-    let v = e.target.value.toLowerCase();
-    document.querySelectorAll('.o-item').forEach(i => {
-        i.style.display = i.dataset.name.includes(v) ? '' : 'none';
-    });
-});
-</script>
 {% endblock %}
