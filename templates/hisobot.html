@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    /* Hisobot uchun maxsus qo'shimcha dizayn */
+    .stat-card {
+        border: none;
+        border-radius: 24px;
+        padding: 25px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        transition: 0.4s;
+    }
+    .stat-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    }
+    .stat-card i {
+        position: absolute;
+        right: -10px;
+        bottom: -10px;
+        font-size: 5rem;
+        opacity: 0.2;
+    }
+    .bg-gradient-kassa { background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); }
+    .bg-gradient-cost { background: linear-gradient(135deg, #64748b 0%, #334155 100%); }
+    .bg-gradient-debt { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); }
+    .bg-gradient-profit { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+
+    .history-table {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+    }
+</style>
+
+<div class="animate__animated animate__fadeIn">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold m-0 text-dark">📊 Moliyaviy Hisobot</h2>
+        <button class="btn btn-outline-primary rounded-pill px-4" onclick="window.print()">
+            <i class="bi bi-printer me-2"></i> Chop etish
+        </button>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="stat-card bg-gradient-kassa">
+                <i class="bi bi-wallet2"></i>
+                <h6 class="text-uppercase small fw-bold opacity-75">Kassa (Naqd tushum)</h6>
+                <h2 class="fw-bold m-0">{{ kassa | format_money }} <small class="fs-6">so'm</small></h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-gradient-cost">
+                <i class="bi bi-cart-check"></i>
+                <h6 class="text-uppercase small fw-bold opacity-75">Sotilgan mahsulot tannarxi</h6>
+                <h2 class="fw-bold m-0">{{ cost | format_money }}</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-gradient-debt">
+                <i class="bi bi-person-exclamation"></i>
+                <h6 class="text-uppercase small fw-bold opacity-75">Kutilayotgan qarzlar</h6>
+                <h2 class="fw-bold m-0">{{ debt | format_money }}</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-gradient-profit">
+                <i class="bi bi-graph-up-arrow"></i>
+                <h6 class="text-uppercase small fw-bold opacity-75">Sof Foyda</h6>
+                <h2 class="fw-bold m-0">{{ prof | format_money }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="history-table p-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold m-0"><i class="bi bi-clock-history me-2 text-primary"></i> Oxirgi savdolar operatsiyalari</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th class="border-0 rounded-start">Sana va Vaqt</th>
+                        <th class="border-0">Mijoz</th>
+                        <th class="border-0">Mahsulot</th>
+                        <th class="border-0">Miqdor</th>
+                        <th class="border-0">Jami Summa</th>
+                        <th class="border-0">To'landi</th>
+                        <th class="border-0 rounded-end">Holat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sales %}
+                    <tr>
+                        <td class="text-muted small">{{ s.date.strftime('%d.%m.%Y | %H:%M') }}</td>
+                        <td class="fw-bold">{{ s.customer_name if s.customer_name else 'Umumiy mijoz' }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ s.product_name }}</span></td>
+                        <td>{{ s.quantity }}</td>
+                        <td class="fw-bold">{{ s.total_price | format_money }}</td>
+                        <td class="text-success">{{ s.paid_amount | format_money }}</td>
+                        <td>
+                            {% if s.debt_amount > 0 %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 rounded-pill">
+                                Qarz: {{ s.debt_amount | format_money }}
+                            </span>
+                            {% else %}
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 rounded-pill">
+                                To'liq to'langan
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">Hozircha hech qanday savdo amalga oshirilmagan.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
