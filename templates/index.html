@@ -1,14 +1,17 @@
 {% extends 'base.html' %}
 {% block content %}
-<form class="mb-4"><input name="search" class="form-control rounded-pill p-3 shadow-sm" placeholder="Mahsulot qidirish..."></form>
+<form class="mb-4"><input name="search" class="form-control rounded-pill p-3 border-0 shadow-sm" placeholder="Mahsulot qidirish..."></form>
 <div class="row g-3">
     {% for p in products %}
     <div class="col-12">
-        <div class="premium-card p-3 d-flex justify-content-between align-items-center">
-            <div><h6 class="fw-bold m-0">{{ p.name }}</h6><small class="text-muted">{{ p.stock }} {{ p.unit }} mavjud</small></div>
+        <div class="premium-card p-3 d-flex justify-content-between align-items-center" onclick="openSell('{{p.id}}', '{{p.name}}', '{{p.sell_price}}')">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-light p-3 rounded-3 text-primary fw-bold">{{ p.name[0]|upper }}</div>
+                <div><h6 class="fw-bold m-0">{{ p.name }}</h6><small class="text-muted">{{ p.stock }} {{ p.unit }} mavjud</small></div>
+            </div>
             <div class="d-flex align-items-center gap-4">
                 <span class="fw-bold text-primary">{{ p.sell_price | format_money }} so'm</span>
-                <button class="btn btn-premium btn-sm" onclick="openSell('{{p.id}}', '{{p.name}}', '{{p.sell_price}}')">Sotish</button>
+                <button class="btn btn-premium btn-sm">Sotish</button>
             </div>
         </div>
     </div>
@@ -17,18 +20,18 @@
 
 <div class="modal fade" id="sellModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <form id="sellForm" method="POST" class="modal-content p-4 rounded-4 border-0">
-            <h5 class="fw-bold mb-3">Sotish: <span id="m_name" class="text-primary"></span></h5>
+        <form id="sellForm" method="POST" class="modal-content p-4 rounded-4 border-0 shadow-lg">
+            <h5 class="fw-bold mb-3 text-primary">Sotish: <span id="m_name"></span></h5>
             <div class="row g-3">
                 <div class="col-6"><label class="small fw-bold">Miqdor</label><input type="number" step="0.1" name="qty" id="qty" class="form-control" required oninput="calc()"></div>
                 <div class="col-6"><label class="small fw-bold">To'landi</label><input type="number" name="paid" id="paid" class="form-control" required oninput="calc()"></div>
-                <div class="col-12"><label class="small fw-bold">Mijoz</label><input type="text" name="customer_name" class="form-control"></div>
+                <div class="col-12"><label class="small fw-bold">Mijoz (ixtiyoriy)</label><input type="text" name="customer_name" class="form-control"></div>
             </div>
-            <div class="mt-4 p-3 bg-light rounded text-end">
-                <div>Jami: <b id="m_total">0</b> so'm</div>
-                <div class="text-danger">Qarz: <b id="m_debt">0</b> so'm</div>
+            <div class="mt-4 p-3 bg-light rounded-3 text-end">
+                <div class="small">Jami: <b id="m_total">0</b> so'm</div>
+                <div class="small text-danger">Qarz: <b id="m_debt">0</b> so'm</div>
             </div>
-            <button class="btn btn-premium w-100 mt-4 py-3">Sotuvni tasdiqlash</button>
+            <button type="submit" class="btn btn-premium w-100 mt-4 py-3">Sotuvni tasdiqlash</button>
         </form>
     </div>
 </div>
