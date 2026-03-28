@@ -1,79 +1,62 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold m-0 text-dark">📦 Ombor</h3>
-    <button class="btn btn-premium shadow-sm" data-bs-toggle="modal" data-bs-target="#addModal">
-        <i class="bi bi-plus-lg"></i> + Yangi mahsulot
+    <h3 class="fw-bold">📦 Ombor Zahirasi</h3>
+    <button class="btn btn-dark rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addModal">
+        <i class="bi bi-plus-circle me-2"></i> Yangi Mahsulot
     </button>
 </div>
 
-<div class="row g-3">
-    {% for p in products %}
-    <div class="col-12">
-        <div class="premium-card p-3 d-flex justify-content-between align-items-center shadow-sm">
-            <div class="d-flex align-items-center gap-3">
-                <div class="bg-primary text-white p-3 rounded-3 fw-bold">{{ p.name[0]|upper }}</div>
-                <div>
-                    <h6 class="fw-bold m-0">{{ p.name }}</h6>
-                    <small class="text-muted">{{ p.category }} | {{ p.stock }} {{ p.unit }}</small>
-                </div>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <div class="text-end me-2">
-                    <small class="text-muted d-block" style="font-size: 0.7rem;">SOTISH:</small>
-                    <span class="fw-bold">{{ p.sell_price | format_money }}</span>
-                </div>
-                <button class="btn btn-sm btn-outline-primary px-3 rounded-pill" 
-                        onclick="openEdit('{{p.id}}','{{p.name}}','{{p.category}}','{{p.buy_price}}','{{p.sell_price}}','{{p.stock}}','{{p.unit}}')">
-                    Tahrirlash
-                </button>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <table class="table table-hover m-0">
+        <thead class="table-light">
+            <tr>
+                <th>Mahsulot</th>
+                <th>Kategoriya</th>
+                <th>Kelish</th>
+                <th>Sotish</th>
+                <th>Qoldiq</th>
+                <th>Amal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in products %}
+            <tr>
+                <td><b class="text-dark">{{p.name}}</b></td>
+                <td>{{p.category}}</td>
+                <td>{{p.buy_price|format_money}}</td>
+                <td class="text-primary fw-bold">{{p.sell_price|format_money}}</td>
+                <td>
+                    <span class="badge {% if p.stock > 5 %}bg-success{% else %}bg-danger{% endif %}">
+                        {{p.stock}} {{p.unit}}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" 
+                            onclick="openEdit('{{p.id}}','{{p.name}}','{{p.category}}','{{p.buy_price}}','{{p.sell_price}}','{{p.stock}}','{{p.unit}}')">
+                        Tahrirlash
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 <div class="modal fade" id="addModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <form action="/ombor" method="POST" class="modal-content p-4 rounded-4 border-0 shadow-lg">
-            <h5 class="fw-bold mb-3">Yangi mahsulot qo'shish</h5>
+        <form action="/ombor" method="POST" class="modal-content border-0 rounded-4 p-3 shadow-lg">
+            <h5 class="fw-bold mb-3">Mahsulot qo'shish</h5>
             <div class="row g-2">
-                <div class="col-12 mb-2"><input name="name" class="form-control" placeholder="Nomi" required></div>
-                <div class="col-6 mb-2"><input name="category" class="form-control" placeholder="Kategoriya"></div>
-                <div class="col-6 mb-2"><input name="unit" class="form-control" placeholder="Birlik (dona/kg)"></div>
-                <div class="col-6 mb-2"><label class="small">Kelish narxi</label><input type="number" name="buy_price" class="form-control" required></div>
-                <div class="col-6 mb-2"><label class="small">Sotish narxi</label><input type="number" name="sell_price" class="form-control" required></div>
-                <div class="col-12"><label class="small">Mavjud soni</label><input type="number" step="0.1" name="stock" class="form-control" required></div>
+                <div class="col-12"><input name="name" class="form-control" placeholder="Nomi" required></div>
+                <div class="col-6"><input name="category" class="form-control" placeholder="Kategoriya"></div>
+                <div class="col-6"><input name="unit" class="form-control" placeholder="Birlik (dona/kg)"></div>
+                <div class="col-6"><label class="small">Kelish narxi</label><input type="number" name="buy_price" class="form-control" required></div>
+                <div class="col-6"><label class="small">Sotish narxi</label><input type="number" name="sell_price" class="form-control" required></div>
+                <div class="col-12"><label class="small">Hozirgi qoldiq</label><input type="number" step="0.1" name="stock" class="form-control" required></div>
             </div>
-            <button type="submit" class="btn btn-premium w-100 mt-4">Saqlash</button>
+            <button class="btn btn-primary w-100 mt-4 py-2 fw-bold">SAQLASH</button>
         </form>
     </div>
 </div>
-
-<div class="modal fade" id="editModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <form id="editForm" method="POST" class="modal-content p-4 rounded-4 border-0 shadow-lg">
-            <h5 class="fw-bold mb-3 text-primary">Tahrirlash</h5>
-            <div class="row g-2">
-                <div class="col-12 mb-2"><input name="name" id="e_name" class="form-control" required></div>
-                <div class="col-6 mb-2"><input name="category" id="e_cat" class="form-control"></div>
-                <div class="col-6 mb-2"><input name="unit" id="e_unit" class="form-control"></div>
-                <div class="col-6 mb-2"><label class="small">Kelish</label><input type="number" name="buy_price" id="e_buy" class="form-control"></div>
-                <div class="col-6 mb-2"><label class="small">Sotish</label><input type="number" name="sell_price" id="e_sell" class="form-control"></div>
-                <div class="col-12"><label class="small">Soni</label><input type="number" step="0.1" name="stock" id="e_stock" class="form-control"></div>
-            </div>
-            <button type="submit" class="btn btn-premium w-100 mt-4">Yangilash</button>
-        </form>
-    </div>
-</div>
-
-<script>
-function openEdit(id, n, c, b, s, st, u) {
-    document.getElementById('e_name').value = n; document.getElementById('e_cat').value = c;
-    document.getElementById('e_buy').value = b; document.getElementById('e_sell').value = s;
-    document.getElementById('e_stock').value = st; document.getElementById('e_unit').value = u;
-    document.getElementById('editForm').action = '/edit/' + id;
-    new bootstrap.Modal(document.getElementById('editModal')).show();
-}
-</script>
 {% endblock %}
