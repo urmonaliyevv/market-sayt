@@ -3,76 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Pro Dark</title>
+    <title>Market Pro Premium</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
-            --bg-dark: #0f172a; /* Asosiy fon (to'q ko'k-kulrang) */
-            --card-dark: #1e293b; /* Kartalar foni */
-            --text-main: #f8fafc; /* Asosiy matn */
-            --accent: #38bdf8; /* Yorqin ko'k (urg'u berish uchun) */
-            --border-color: rgba(255, 255, 255, 0.1);
+            --main-bg: #0b0f19;
+            --card-bg: #151b28;
+            --accent: #3b82f6;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
         }
         body { 
-            background-color: var(--bg-dark); 
+            background-color: var(--main-bg); 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            color: var(--text-main);
+            color: var(--text);
+            letter-spacing: -0.02em;
         }
         .navbar { 
-            background: rgba(15, 23, 42, 0.9) !important;
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border-color);
+            background: rgba(11, 15, 25, 0.8) !important;
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
         .card { 
-            background-color: var(--card-dark); 
-            border: 1px solid var(--border-color);
-            border-radius: 20px; 
-            color: var(--text-main);
+            background: var(--card-bg); 
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
+        .nav-link { color: var(--muted) !important; font-weight: 600; transition: 0.3s; }
+        .nav-link.active { color: var(--accent) !important; }
         .btn-primary { 
-            background: var(--accent); 
-            border: none; color: #0f172a; font-weight: 700;
+            background: var(--accent); border: none; border-radius: 14px; 
+            padding: 12px 24px; font-weight: 700;
         }
-        .btn-primary:hover { background: #7dd3fc; color: #0f172a; }
-        .nav-link { color: #94a3b8 !important; }
-        .nav-link.active { color: var(--accent) !important; font-weight: bold; }
         .rounded-input { 
-            background-color: #334155 !important; 
-            border: 1px solid var(--border-color) !important; 
-            color: white !important;
-            border-radius: 12px;
+            background: #1f2937 !important; border: 1px solid rgba(255,255,255,0.1) !important; 
+            color: white !important; border-radius: 16px; padding: 12px 18px;
         }
-        .rounded-input::placeholder { color: #94a3b8; }
-        .table { color: var(--text-main); }
-        .table-hover tbody tr:hover { background-color: rgba(255, 255, 255, 0.05); color: white; }
-        .badge.bg-light { background-color: #334155 !important; color: var(--accent) !important; border: 1px solid var(--border-color); }
-        
-        /* SweetAlert To'q rejimda */
-        .swal2-popup { background: var(--card-dark) !important; color: white !important; }
+        .rounded-input:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15) !important; }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg sticky-top mb-4">
+    <nav class="navbar navbar-expand-lg sticky-top py-3 mb-4">
         <div class="container">
-            <a class="navbar-brand fw-bold fs-3 text-white" href="/">🚀 PRO<span style="color: var(--accent);">MARKET</span></a>
-            <button class="navbar-toggler border-0 text-white" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <i class="bi bi-list fs-2"></i>
-            </button>
+            <a class="navbar-brand fw-bold fs-3 text-white" href="/">PRO<span class="text-primary">MARKET</span></a>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto gap-2">
+                <ul class="navbar-nav ms-auto gap-3">
                     <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">Savdo</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.path == '/ombor' %}active{% endif %}" href="/ombor">Ombor</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.path == '/hisobot' %}active{% endif %}" href="/hisobot">Hisobot</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.path == '/qarzlar' %}active{% endif %}" href="/qarzlar">Qarzlar</a></li>
-                    <li class="nav-item ms-lg-3"><a class="btn btn-outline-danger rounded-pill px-4" href="/logout">Chiqish</a></li>
+                    <li class="nav-item ms-lg-2"><a class="btn btn-outline-danger border-0 rounded-pill px-4" href="/logout">Chiqish</a></li>
                 </ul>
             </div>
         </div>
     </nav>
-    <div class="container">{% block content %}{% endblock %}</div>
+    <div class="container pb-5">{% block content %}{% endblock %}</div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
