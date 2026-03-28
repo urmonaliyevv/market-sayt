@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between mb-4 align-items-center">
+    <h3 class="fw-bold m-0">📦 Ombor</h3>
+    <button class="btn btn-premium" data-bs-toggle="modal" data-bs-target="#addModal">+ Yangi mahsulot</button>
+</div>
+
+<div class="row g-2">
+    {% for p in products %}
+    <div class="col-12">
+        <div class="premium-card p-3 d-flex justify-content-between align-items-center">
+            <div><h6 class="fw-bold m-0">{{ p.name }}</h6><small class="text-muted">{{ p.category }} | {{ p.stock }} {{ p.unit }}</small></div>
+            <div class="d-flex gap-3 align-items-center">
+                <span class="badge bg-light text-dark border p-2">{{ p.sell_price | format_money }}</span>
+                <button class="btn btn-outline-primary btn-sm rounded-3" onclick="openEdit('{{p.id}}', '{{p.name}}', '{{p.category}}', '{{p.buy_price}}', '{{p.sell_price}}', '{{p.stock}}', '{{p.unit}}')">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form action="/ombor" method="POST" class="modal-content p-4 rounded-4 border-0">
+            <h5 class="fw-bold mb-3">Yangi mahsulot</h5>
+            <div class="row g-2">
+                <div class="col-12"><input name="name" class="form-control" placeholder="Nomi" required></div>
+                <div class="col-6"><input name="category" class="form-control" placeholder="Kategoriya" required></div>
+                <div class="col-6"><select name="unit" class="form-control"><option value="dona">dona</option><option value="kg">kg</option></select></div>
+                <div class="col-6"><label class="small">Kelish narxi</label><input type="number" name="buy_price" class="form-control" required></div>
+                <div class="col-6"><label class="small">Sotish narxi</label><input type="number" name="sell_price" class="form-control" required></div>
+                <div class="col-12"><label class="small">Soni</label><input type="number" step="0.1" name="stock" class="form-control" required></div>
+            </div>
+            <button class="btn btn-premium w-100 mt-4 py-3">Saqlash</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="editForm" method="POST" class="modal-content p-4 rounded-4 border-0">
+            <h5 class="fw-bold mb-3 text-primary">Tahrirlash</h5>
+            <div class="row g-2">
+                <div class="col-12"><input name="name" id="e_name" class="form-control" required></div>
+                <div class="col-6"><input name="category" id="e_cat" class="form-control" required></div>
+                <div class="col-6"><select name="unit" id="e_unit" class="form-control"><option value="dona">dona</option><option value="kg">kg</option></select></div>
+                <div class="col-6"><label class="small">Kelish</label><input type="number" name="buy_price" id="e_buy" class="form-control" required></div>
+                <div class="col-6"><label class="small">Sotish</label><input type="number" name="sell_price" id="e_sell" class="form-control" required></div>
+                <div class="col-12"><label class="small">Soni</label><input type="number" step="0.1" name="stock" id="e_stock" class="form-control" required></div>
+            </div>
+            <button class="btn btn-premium w-100 mt-4 py-3">Yangilash</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEdit(id, name, cat, buy, sell, stock, unit) {
+    document.getElementById('e_name').value = name;
+    document.getElementById('e_cat').value = cat;
+    document.getElementById('e_buy').value = buy;
+    document.getElementById('e_sell').value = sell;
+    document.getElementById('e_stock').value = stock;
+    document.getElementById('e_unit').value = unit;
+    document.getElementById('editForm').action = '/edit_product/' + id;
+    new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+</script>
+{% endblock %}

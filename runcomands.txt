@@ -1,0 +1,18 @@
+pip install table  /
+1.     pip install flask flask-sqlalchemy
+
+
+run comand /
+1.     python app.py
+
+files struktura  /
+
+marketing/
+├── app.py
+└── templates/
+    ├── base.html
+    ├── index.html
+    ├── ombor.html
+    ├── qarzlar.html
+    └── hisobot.html
+
