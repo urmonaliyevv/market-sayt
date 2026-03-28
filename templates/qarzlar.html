@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="animate__animated animate__fadeIn">
+    <h3 class="fw-bold mb-4 text-danger d-flex align-items-center">
+        <i class="bi bi-person-exclamation me-2"></i> Qarzdorlar ro'yxati
+    </h3>
+
+    <div class="row g-3">
+        {% for d in debts %}
+        <div class="col-12">
+            <div class="premium-card p-3 d-flex justify-content-between align-items-center border-start border-5 border-danger shadow-sm">
+                <div>
+                    <h6 class="fw-bold m-0 text-uppercase text-dark">{{ d.customer_name or 'Noma\'lum mijoz' }}</h6>
+                    <small class="text-muted"><i class="bi bi-box-seam"></i> {{ d.product_name }}</small>
+                    <div class="small text-muted mt-1"><i class="bi bi-calendar3"></i> {{ d.date.strftime('%d.%m.%Y') }}</div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-end me-2">
+                        <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Qarz miqdori</div>
+                        <span class="fw-bold text-danger fs-5">{{ d.debt_amount | format_money }} so'm</span>
+                    </div>
+
+                    <form action="/pay_debt/{{d.id}}" method="POST" onsubmit="confirmPay(event, this)" class="d-flex gap-2">
+                        <input type="number" name="pay_val" class="form-control form-control-sm shadow-sm" style="width: 120px" placeholder="Summa..." required>
+                        <button class="btn btn-success btn-sm px-3 rounded-pill shadow-sm">
+                            <i class="bi bi-check2-circle"></i> To'lash
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <div class="premium-card p-5 d-inline-block shadow-sm w-100" style="max-width: 500px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px);">
+                <div class="display-1 text-success opacity-25 mb-3">
+                    <i class="bi bi-emoji-smile"></i>
+                </div>
+                <h4 class="fw-bold text-dark">Hozircha qarzdorlar yo'q</h4>
+                <p class="text-muted">Barcha hisob-kitoblar yopilgan. Ishlaringizga baraka!</p>
+                <a href="/" class="btn btn-premium rounded-pill px-4 mt-2">
+                    <i class="bi bi-cart-plus me-2"></i> Sotuvga qaytish
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function confirmPay(e, f) {
+    e.preventDefault();
+    const amount = f.querySelector('input[name="pay_val"]').value;
+
+    Swal.fire({
+        title: 'Qarz to\'lovi',
+        text: amount + " so'm qabul qilinsinmi?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ha, to\'landi',
+        cancelButtonText: 'Bekor qilish',
+        borderRadius: '20px'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Bajarildi!',
+                text: 'To\'lov muvaffaqiyatli qabul qilindi.',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            setTimeout(() => f.submit(), 1500);
+        }
+    });
+}
+</script>
+{% endblock %}
