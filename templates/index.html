@@ -2,110 +2,165 @@
 {% block content %}
 <div class="row g-4">
     <div class="col-lg-8">
-        <div class="d-flex gap-2 mb-3 overflow-auto pb-2" id="categoryFilters">
-            <button class="btn btn-dark rounded-pill px-4 active-cat" onclick="filterCat('all')">Hammasi</button>
+        <div class="d-flex gap-2 mb-3 overflow-auto pb-2" id="catBar">
+            <button class="btn btn-primary rounded-pill px-4" onclick="filterCat('all')">Hammasi</button>
             {% set cats = [] %}
             {% for p in products %}
                 {% if p.category not in cats %}
-                    <button class="btn btn-outline-dark rounded-pill px-4" onclick="filterCat('{{p.category}}')">{{p.category}}</button>
+                    <button class="btn btn-white shadow-sm rounded-pill px-4" onclick="filterCat('{{p.category}}')">{{p.category}}</button>
                     {% if cats.append(p.category) %}{% endif %}
                 {% endif %}
             {% endfor %}
         </div>
 
-        <input id="qidiruv" class="form-control form-control-lg mb-4 rounded-4 shadow-sm" placeholder="Mahsulot qidirish...">
-        
-        <div class="list-group shadow-sm rounded-4 overflow-hidden" id="productGrid">
-            {% for p in products %}
-            <div class="list-group-item list-group-item-action border-0 py-3 prod-item" 
-                 onclick="addToCart('{{p.id}}', '{{p.name}}', '{{p.sell_price}}', '{{p.stock}}')"
-                 data-name="{{p.name.lower()}}" data-cat="{{p.category}}" style="cursor: pointer;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="fw-bold mb-1">{{p.name}}</h6>
-                        <small class="text-muted">{{p.category}}</small> | 
-                        <span class="badge {% if p.stock > 0 %}bg-info text-dark{% else %}bg-danger{% endif %}">{{p.stock}} {{p.unit}}</span>
-                    </div>
-                    <span class="fw-bold text-primary fs-5">{{p.sell_price|format_money}} so'm</span>
-                </div>
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 py-3">
+                <input id="qidiruv" class="form-control border-0 bg-light rounded-3" placeholder="🔍 Mahsulot qidirish...">
             </div>
-            {% endfor %}
+            <div class="list-group list-group-flush" id="productGrid" style="max-height: 65vh; overflow-y: auto;">
+                {% for p in products %}
+                <div class="list-group-item list-group-item-action border-0 py-3 prod-item" 
+                     data-name="{{p.name.lower()}}" data-cat="{{p.category}}"
+                     onclick="addToCart('{{p.id}}', '{{p.name}}', '{{p.sell_price}}', '{{p.stock}}')">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold mb-1 text-dark">{{p.name}}</h6>
+                            <span class="badge bg-soft-info text-info">{{p.stock}} {{p.unit}}</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="fw-bold text-primary fs-5">{{p.sell_price|format_money}}</span>
+                            <small class="d-block text-muted">so'm</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 
     <div class="col-lg-4">
         <div class="card border-0 shadow-lg rounded-4 sticky-top" style="top: 20px;">
-            <div class="card-header bg-dark text-white py-3 fw-bold">🛒 Savat</div>
-            <div id="cartItems" class="card-body overflow-auto" style="height: 350px;">
-                <p class="text-center text-muted mt-5">Savat bo'sh</p>
+            <div class="card-header bg-dark text-white py-3">
+                <h5 class="m-0 fs-6"><i class="bi bi-cart3 me-2"></i>SOTUV SAVATI</h5>
             </div>
-            <div class="card-footer bg-white border-0 p-3">
+            <div id="cartItems" class="card-body overflow-auto" style="height: 300px;">
+                <p class="text-center text-muted mt-5">Savat bo'sh...</p>
+            </div>
+            <div class="card-footer bg-white border-0 p-4">
                 <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                    <span class="fs-5">Jami:</span>
-                    <h4 class="fw-bold text-primary m-0" id="jami">0</h4>
+                    <span class="text-muted">Jami summa:</span>
+                    <h3 class="fw-bold text-primary m-0" id="totalVal">0</h3>
                 </div>
-                <input type="number" id="paid" class="form-control mb-2" placeholder="To'lov summasi">
-                <input type="text" id="cust" class="form-control mb-3" placeholder="Mijoz ismi">
-                <button class="btn btn-primary w-100 py-3 fw-bold rounded-3" onclick="finish()">SOTISH VA CHEK</button>
+                <input type="number" id="paidVal" class="form-control mb-2 rounded-3" placeholder="To'lov summasi">
+                <input type="text" id="custName" class="form-control mb-3 rounded-3" placeholder="Mijoz ismi">
+                <button class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow" onclick="askCheck()">
+                    SOTUVNI YAKUNLASH
+                </button>
             </div>
         </div>
+    </div>
+</div>
+
+<div id="checkTemplate" style="display: none;">
+    <div style="width: 80mm; padding: 10px; font-family: 'Courier New', monospace; color: #000; background: #fff;">
+        <center>
+            <h3 style="margin: 0;">MARKET PRO</h3>
+            <p style="font-size: 12px;">Sana: <span id="c_date"></span></p>
+        </center>
+        <hr style="border-top: 1px dashed #000;">
+        <div id="c_items"></div>
+        <hr style="border-top: 1px dashed #000;">
+        <table style="width: 100%; font-weight: bold;">
+            <tr><td>JAMI:</td><td align="right" id="c_total"></td></tr>
+        </table>
+        <center><p style="margin-top: 20px; font-size: 12px;">Xaridingiz uchun rahmat!</p></center>
     </div>
 </div>
 
 <script>
 let cart = [];
 
-function filterCat(cat) {
-    const items = document.querySelectorAll('.prod-item');
-    items.forEach(item => {
-        if (cat === 'all' || item.dataset.cat === cat) {
-            item.style.setProperty('display', 'block', 'important');
-        } else {
-            item.style.setProperty('display', 'none', 'important');
-        }
-    });
-}
-
 function addToCart(id, name, price, stock) {
-    if(parseFloat(stock) <= 0) return Swal.fire('Omborda mahsulot qolmagan!');
+    if(stock <= 0) return Swal.fire('Omborda yo\'q!');
     let item = cart.find(x => x.id == id);
     if(item) {
         if(item.qty < stock) item.qty++;
-        else return Swal.fire('Ombor qoldig\'idan ko\'p sotib bo\'lmaydi');
     } else {
         cart.push({id:id, name:name, price:parseFloat(price), qty:1});
     }
-    render();
+    renderCart();
 }
 
-function render() {
+function renderCart() {
     let h = ""; let t = 0;
     cart.forEach(x => {
         t += x.price * x.qty;
-        h += `<div class="d-flex justify-content-between align-items-center mb-3">
-            <div style="flex:1"><b>${x.name}</b><br><small>${x.qty} x ${x.price.toLocaleString()}</small></div>
-            <div class="fw-bold me-2">${(x.price*x.qty).toLocaleString()}</div>
-            <i class="bi bi-trash text-danger" style="cursor:pointer" onclick="cart=cart.filter(i=>i.id!=${x.id});render()"></i>
+        h += `<div class="d-flex justify-content-between mb-3 align-items-center">
+            <div style="flex:1"><b class="small text-dark d-block">${x.name}</b><small class="text-muted">${x.qty} x ${x.price.toLocaleString()}</small></div>
+            <div class="fw-bold mx-2">${(x.price*x.qty).toLocaleString()}</div>
+            <i class="bi bi-x-circle text-danger pointer" onclick="cart=cart.filter(i=>i.id!=${x.id});renderCart()"></i>
         </div>`;
     });
-    document.getElementById('cartItems').innerHTML = h || '<p class="text-center text-muted mt-5">Savat bo\'sh</p>';
-    document.getElementById('jami').innerText = t.toLocaleString() + " so'm";
+    document.getElementById('cartItems').innerHTML = h || '<p class="text-center text-muted mt-5">Savat bo\'sh...</p>';
+    document.getElementById('totalVal').innerText = t.toLocaleString();
 }
 
-function finish() {
-    if(cart.length == 0) return Swal.fire('Savat bo\'sh!');
-    const paid = document.getElementById('paid').value;
-    const cust = document.getElementById('cust').value || "Umumiy mijoz";
+function askCheck() {
+    if(cart.length == 0) return;
+    Swal.fire({
+        title: 'Sotilsinmi?',
+        text: "Xarid uchun chek kerakmi?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ha, Chek bilan',
+        cancelButtonText: 'Yo\'q, Faqat sotish',
+        reverseButtons: true
+    }).then((result) => {
+        const needPrint = result.isConfirmed;
+        processSale(needPrint);
+    });
+}
+
+function processSale(print) {
+    const paid = document.getElementById('paidVal').value;
+    const cust = document.getElementById('custName').value;
     
     fetch('/bulk_sell', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({items: cart, paid: paid, customer: cust})
-    }).then(res => res.json()).then(data => {
-        if(data.status == 'success') {
-            window.print(); // Chek chiqarish
-            Swal.fire('Muvaffaqiyatli!', '', 'success').then(() => location.reload());
+    }).then(() => {
+        if(print) {
+            generateCheck();
+        } else {
+            Swal.fire('Sotildi!', '', 'success').then(() => location.reload());
         }
+    });
+}
+
+function generateCheck() {
+    let itemsH = "";
+    cart.forEach(x => {
+        itemsH += `<div style="display:flex; justify-content:space-between; font-size:13px;">
+            <span>${x.name} x${x.qty}</span><span>${(x.price*x.qty).toLocaleString()}</span>
+        </div>`;
+    });
+    document.getElementById('c_items').innerHTML = itemsH;
+    document.getElementById('c_date').innerText = new Date().toLocaleString();
+    document.getElementById('c_total').innerText = document.getElementById('totalVal').innerText + " so'm";
+    
+    const content = document.getElementById('checkTemplate').innerHTML;
+    const win = window.open('', '', 'width=400,height=600');
+    win.document.write(content);
+    win.document.close();
+    win.print();
+    win.close();
+    location.reload();
+}
+
+function filterCat(cat) {
+    document.querySelectorAll('.prod-item').forEach(i => {
+        i.style.display = (cat === 'all' || i.dataset.cat === cat) ? 'block' : 'none';
     });
 }
 
