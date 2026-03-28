@@ -2,18 +2,23 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-8">
-        <input id="qidiruv" class="form-control form-control-lg mb-4 rounded-pill shadow-sm" placeholder="Mahsulot qidirish...">
-        <div class="row g-3">
+        <div class="d-flex mb-4 gap-2">
+            <input id="searchProd" class="form-control form-control-lg rounded-pill shadow-sm" placeholder="Mahsulot qidirish...">
+        </div>
+        <div class="row g-3" id="productGrid">
             {% for p in products %}
-            <div class="col-md-4 prod-card" data-name="{{p.name.lower()}}">
-                <div class="premium-card p-3 h-100 d-flex flex-column justify-content-between" onclick="add('{{p.id}}', '{{p.name}}', '{{p.sell_price}}', '{{p.stock}}')">
+            <div class="col-md-4 prod-item" data-name="{{p.name.lower()}}">
+                <div class="premium-card p-3 h-100 d-flex flex-column justify-content-between shadow-sm border-0" 
+                     onclick="addToCart('{{p.id}}', '{{p.name}}', '{{p.sell_price}}', '{{p.stock}}', '{{p.unit}}')">
                     <div>
-                        <h6 class="fw-bold m-0">{{p.name}}</h6>
+                        <h6 class="fw-bold m-0 text-dark">{{p.name}}</h6>
                         <small class="text-muted">{{p.category}}</small>
                     </div>
-                    <div class="d-flex justify-content-between align-items-end mt-3">
+                    <div class="d-flex justify-content-between align-items-center mt-3">
                         <span class="fw-bold text-primary">{{p.sell_price|format_money}}</span>
-                        <span class="badge {% if p.stock > 0 %}bg-success{% else %}bg-danger{% endif %}">{{p.stock}} {{p.unit}}</span>
+                        <span class="badge {% if p.stock > 0 %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                            {{p.stock}} {{p.unit}}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -22,76 +27,76 @@
     </div>
 
     <div class="col-lg-4">
-        <div class="card border-0 shadow-lg rounded-4 cart-sticky">
-            <div class="card-header bg-white py-3 fw-bold fs-5 border-0">🛒 Xarid Savati</div>
-            <div id="savatBox" class="card-body overflow-auto" style="max-height: 350px;">
-                <p class="text-center text-muted">Savat bo'sh...</p>
+        <div class="card border-0 shadow-lg rounded-4 sticky-top" style="top: 80px;">
+            <div class="card-header bg-dark text-white py-3">
+                <h5 class="m-0"><i class="bi bi-cart3 me-2"></i> Savat</h5>
             </div>
-            <div class="card-footer bg-white border-0 p-3">
-                <div class="d-flex justify-content-between mb-3">
-                    <span class="fs-5">Jami:</span>
-                    <span id="jamiSum" class="fs-4 fw-bold text-primary">0</span>
+            <div id="cartContent" class="card-body overflow-auto" style="max-height: 400px; min-height: 200px;">
+                <p class="text-center text-muted mt-5">Savat bo'sh</p>
+            </div>
+            <div class="card-footer bg-light p-3 border-0">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="fw-bold">Jami:</span>
+                    <h4 class="fw-bold text-primary m-0" id="totalDisplay">0</h4>
                 </div>
-                <input type="number" id="to'landi" class="form-control mb-2" placeholder="To'lov summasi">
-                <input type="text" id="mijoz" class="form-control mb-3" placeholder="Mijoz ismi">
-                <button class="btn btn-primary w-100 py-3 fw-bold shadow" onclick="finish()">SOTISH VA CHEK</button>
+                <div class="mb-2">
+                    <input type="number" id="paidInput" class="form-control mb-2" placeholder="To'langan summa">
+                    <input type="text" id="custInput" class="form-control" placeholder="Mijoz ismi (Qarz uchun)">
+                </div>
+                <button class="btn btn-primary w-100 py-3 fw-bold rounded-3" onclick="submitSale()">
+                    <i class="bi bi-printer me-2"></i> SOTISH VA TASDIQLASH
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-let savat = [];
-
-function add(id, name, price, stock) {
-    if(stock <= 0) return Swal.fire('Omborda mahsulot yo\'q!');
-    let bor = savat.find(x => x.id == id);
-    if(bor) {
-        if(bor.qty < stock) bor.qty++;
+let cart = [];
+function addToCart(id, name, price, stock, unit) {
+    if (stock <= 0) return Swal.fire('Omborda mahsulot qolmagan!');
+    let item = cart.find(x => x.id == id);
+    if (item) {
+        if (item.qty < stock) item.qty++;
+        else return Swal.fire('Ombordagi miqdordan oshib bo\'lmaydi!');
     } else {
-        savat.push({id:id, name:name, price:parseFloat(price), qty:1});
+        cart.push({id: id, name: name, price: parseFloat(price), qty: 1});
     }
-    render();
+    renderCart();
 }
-
-function remove(id) {
-    savat = savat.filter(x => x.id != id);
-    render();
-}
-
-function render() {
-    let h = ""; let total = 0;
-    savat.forEach(x => {
-        total += x.price * x.qty;
-        h += `<div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                <div><b>${x.name}</b><br><small>${x.price.toLocaleString()} x ${x.qty}</small></div>
-                <div class="text-end"><b>${(x.price*x.qty).toLocaleString()}</b><br>
-                <i class="bi bi-trash text-danger pointer" onclick="remove(${x.id})"></i></div>
-              </div>`;
+function renderCart() {
+    let html = ""; let total = 0;
+    cart.forEach(x => {
+        total += (x.price * x.qty);
+        html += `<div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+            <div style="flex:1"><b>${x.name}</b><br><small>${x.price.toLocaleString()} x ${x.qty}</small></div>
+            <div class="fw-bold me-2">${(x.price*x.qty).toLocaleString()}</div>
+            <button class="btn btn-sm text-danger" onclick="cart=cart.filter(i=>i.id!=${x.id});renderCart()"><i class="bi bi-x-circle"></i></button>
+        </div>`;
     });
-    document.getElementById('savatBox').innerHTML = h || '<p class="text-center text-muted">Savat bo\'sh...</p>';
-    document.getElementById('jamiSum').innerText = total.toLocaleString();
+    document.getElementById('cartContent').innerHTML = html || '<p class="text-center text-muted mt-5">Savat bo\'sh</p>';
+    document.getElementById('totalDisplay').innerText = total.toLocaleString() + " so'm";
 }
-
-function finish() {
-    if(savat.length == 0) return;
+function submitSale() {
+    if (cart.length == 0) return;
     fetch('/bulk_sell', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-            items: savat,
-            paid: document.getElementById('to\'landi').value,
-            customer: document.getElementById('mijoz').value
+            items: cart,
+            paid: document.getElementById('paidInput').value,
+            customer: document.getElementById('custInput').value
         })
-    }).then(() => {
-        Swal.fire('Muvaffaqiyatli!', '', 'success').then(() => location.reload());
+    }).then(res => res.json()).then(data => {
+        if(data.status == 'success') {
+            Swal.fire('Sotuv bajarildi!', '', 'success').then(() => location.reload());
+        }
     });
 }
-
-document.getElementById('qidiruv').addEventListener('input', e => {
+document.getElementById('searchProd').addEventListener('input', e => {
     let v = e.target.value.toLowerCase();
-    document.querySelectorAll('.prod-card').forEach(c => {
-        c.style.display = c.dataset.name.includes(v) ? 'block' : 'none';
+    document.querySelectorAll('.prod-item').forEach(i => {
+        i.style.display = i.dataset.name.includes(v) ? 'block' : 'none';
     });
 });
 </script>
