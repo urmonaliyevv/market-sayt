@@ -1,13 +1,21 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///market_pro.db'
-app.config['SECRET_KEY'] = 'premium_secret_2026'
+
+# Railway PostgreSQL yoki Lokal SQLite ulanishi
+uri = os.getenv("DATABASE_URL")
+if uri and uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_final.db'
+app.config['SECRET_KEY'] = 'super-secret-key-2026'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
 
-# Summani 18.000.000 ko'rinishida formatlash uchun filtr
+# Summa formatlash: 18.000.000
 @app.template_filter('format_money')
 def format_money(value):
     try:
@@ -15,15 +23,15 @@ def format_money(value):
     except:
         return value
 
-# --- MA'LUMOTLAR BAZASI MODELLARI ---
+# --- MODELLAR ---
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    category = db.Column(db.String(50), nullable=False)
-    buy_price = db.Column(db.Float, nullable=False)
-    sell_price = db.Column(db.Float, nullable=False)
+    category = db.Column(db.String(50))
+    buy_price = db.Column(db.Float, default=0)
+    sell_price = db.Column(db.Float, default=0)
     stock = db.Column(db.Float, default=0)
-    unit = db.Column(db.String(10))
+    unit = db.Column(db.String(10), default='dona')
 
 class Sale(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -39,18 +47,15 @@ class Sale(db.Model):
 with app.app_context():
     db.create_all()
 
-# --- YO'NALISHLAR (ROUTES) ---
-
+# --- ROUTES ---
 @app.route('/')
 def index():
-    cat = request.args.get('category')
     search = request.args.get('search')
     query = Product.query
-    if cat: query = query.filter_by(category=cat)
-    if search: query = query.filter(Product.name.contains(search))
+    if search:
+        query = query.filter(Product.name.contains(search))
     products = query.all()
-    categories = db.session.query(Product.category).distinct().all()
-    return render_template('index.html', products=products, categories=categories)
+    return render_template('index.html', products=products)
 
 @app.route('/ombor', methods=['GET', 'POST'])
 def ombor():
@@ -66,10 +71,9 @@ def ombor():
         db.session.add(new_p)
         db.session.commit()
         return redirect(url_for('ombor'))
-    products = Product.query.all()
-    return render_template('ombor.html', products=products)
+    return render_template('ombor.html', products=Product.query.all())
 
-@app.route('/edit_product/<int:id>', methods=['POST'])
+@app.route('/edit/<int:id>', methods=['POST'])
 def edit_product(id):
     p = Product.query.get_or_404(id)
     p.name = request.form['name']
@@ -87,12 +91,11 @@ def sell(id):
     qty = float(request.form['qty'])
     paid = float(request.form['paid'])
     total = qty * p.sell_price
-    profit = (p.sell_price - p.buy_price) * qty
     sale = Sale(
         customer_name=request.form.get('customer_name'),
-        product_name=p.name, quantity=qty,
-        total_price=total, paid_amount=paid,
-        debt_amount=max(0, total - paid), profit=profit
+        product_name=p.name, quantity=qty, total_price=total,
+        paid_amount=paid, debt_amount=max(0, total-paid),
+        profit=(p.sell_price - p.buy_price) * qty
     )
     p.stock -= qty
     db.session.add(sale)
@@ -106,24 +109,21 @@ def qarzlar():
 
 @app.route('/pay_debt/<int:id>', methods=['POST'])
 def pay_debt(id):
-    sale = Sale.query.get_or_404(id)
-    pay_val = float(request.form['pay_val'])
-    sale.debt_amount = max(0, sale.debt_amount - pay_val)
-    sale.paid_amount += pay_val
+    s = Sale.query.get_or_404(id)
+    pay = float(request.form['pay_val'])
+    s.debt_amount = max(0, s.debt_amount - pay)
+    s.paid_amount += pay
     db.session.commit()
     return redirect(url_for('qarzlar'))
 
 @app.route('/hisobot')
 def hisobot():
     sales = Sale.query.all()
-    context = {
-        'kassa': sum(s.paid_amount for s in sales),
-        'debt': sum(s.debt_amount for s in sales),
-        'prof': sum(s.profit for s in sales),
-        'cost': sum((s.total_price - s.profit) for s in sales),
-        'sales': sales[::-1]
-    }
-    return render_template('hisobot.html', **context)
+    kassa = sum(s.paid_amount for s in sales)
+    debt = sum(s.debt_amount for s in sales)
+    prof = sum(s.profit for s in sales)
+    return render_template('hisobot.html', kassa=kassa, debt=debt, prof=prof, sales=sales[::-1])
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
