@@ -134,21 +134,22 @@ def hisobot():
     if 'user_id' not in session: return redirect(url_for('login'))
     uid = session['user_id']
     
-    sales = Sale.query.filter_by(user_id=uid).all()
-    expenses = Expense.query.filter_by(user_id=uid).all()
-    products = Product.query.filter_by(user_id=uid).all()
+    # Ma'lumotlarni olishda xato bo'lmasligi uchun bo'sh ro'yxat qaytarish
+    try:
+        sales = Sale.query.filter_by(user_id=uid).all()
+        expenses = Expense.query.filter_by(user_id=uid).all()
+        products = Product.query.filter_by(user_id=uid).all()
+    except:
+        # Agar baza yangilanmagan bo'lsa, bu yerda xato chiqadi
+        return "Baza yangilanmagan! Iltimos bazani o'chirib qayta yarating yoki Expense jadvalini qo'shing."
 
-    total_sales = sum(s.total_price for s in sales)      # Umumiy savdo (Kirim bo'lishi kerak bo'lgan summa)
-    total_received = sum(s.paid_amount for s in sales)   # Haqiqiy tushgan pul (Kassa)
-    total_debt = sum(s.debt_amount for s in sales)       # Ko'chadagi qarzlar
-    
-    # Sof foyda: (Sotish narxi - Kelish narxi) - Umumiy xarajatlar
-    gross_profit = sum(s.profit for s in sales)
-    total_expenses = sum(e.amount for e in expenses)
+    total_sales = sum(s.total_price for s in sales) or 0
+    total_received = sum(s.paid_amount for s in sales) or 0
+    total_debt = sum(s.debt_amount for s in sales) or 0
+    gross_profit = sum(s.profit for s in sales) or 0
+    total_expenses = sum(e.amount for e in expenses) or 0
     net_profit = gross_profit - total_expenses
-    
-    # Ombor qiymati (Kelish narxida)
-    stock_value = sum(p.stock * p.buy_price for p in products)
+    stock_value = sum(p.stock * p.buy_price for p in products) or 0
 
     return render_template('hisobot.html', 
                            sales=sales[::-1], 
