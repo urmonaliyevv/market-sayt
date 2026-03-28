@@ -1,25 +1,26 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'pos-pro-2026-premium'
+app.config['SECRET_KEY'] = 'pos-pro-2026-secret'
 
+# Ma'lumotlar bazasi sozlamasi
 uri = os.getenv("DATABASE_URL")
 if uri and uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_premium.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///market_final.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# --- MODELLAR ---
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    products = db.relationship('Product', backref='owner', lazy=True)
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -43,12 +44,28 @@ class Sale(db.Model):
     date = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+class Expense(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column(db.String(200))
+    amount = db.Column(db.Float, default=0)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+# BAZANI YARATISH (Internal Error bermasligi uchun)
 with app.app_context():
     db.create_all()
 
 @app.template_filter('format_money')
 def format_money(value):
     return "{:,.0f}".format(value or 0).replace(',', ' ')
+
+# --- YO'NALISHLAR (ROUTES) ---
+
+@app.route('/')
+def index():
+    if 'user_id' not in session: return redirect(url_for('login'))
+    products = Product.query.filter_by(user_id=session['user_id']).all()
+    return render_template('index.html', products=products)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -60,118 +77,111 @@ def login():
             return redirect(url_for('index'))
     return render_template('login.html')
 
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('login'))
-
-@app.route('/')
-def index():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    products = Product.query.filter_by(user_id=session['user_id']).all()
-    return render_template('index.html', products=products)
-
 @app.route('/bulk_sell', methods=['POST'])
 def bulk_sell():
     data = request.get_json()
     items = data.get('items', [])
     paid = float(data.get('paid') or 0)
     customer = data.get('customer') or "Umumiy mijoz"
-    total_sum = sum(i['price'] * i['qty'] for i in items)
+    
+    total_cart_sum = sum(i['price'] * i['qty'] for i in items)
+    debt_per_sale = max(0, total_cart_sum - paid)
+    
     for i, item in enumerate(items):
         p = Product.query.get(item['id'])
         if p:
             qty = float(item['qty'])
             p.stock -= qty
-            sale = Sale(customer_name=customer, product_name=p.name, quantity=qty,
-                        total_price=qty * p.sell_price, paid_amount=paid if i == 0 else 0,
-                        debt_amount=max(0, total_sum - paid) if i == 0 else 0,
-                        profit=(p.sell_price - p.buy_price) * qty, user_id=session['user_id'])
+            # Birinchi mahsulotga jami to'lov va qarzni yozamiz
+            sale = Sale(
+                customer_name=customer,
+                product_name=p.name,
+                quantity=qty,
+                total_price=qty * p.sell_price,
+                paid_amount=paid if i == 0 else 0,
+                debt_amount=debt_per_sale if i == 0 else 0,
+                profit=(p.sell_price - p.buy_price) * qty,
+                user_id=session['user_id']
+            )
             db.session.add(sale)
     db.session.commit()
     return jsonify({"status": "success"})
 
-@app.route('/pay_debt/<int:id>', methods=['POST'])
-def pay_debt(id):
-    s = Sale.query.get_or_404(id)
-    pay = float(request.form['pay_val'] or 0)
-    s.debt_amount = max(0, s.debt_amount - pay)
-    s.paid_amount += pay
-    db.session.commit()
-    return redirect(url_for('qarzlar'))
-
 @app.route('/ombor', methods=['GET', 'POST'])
 def ombor():
+    if 'user_id' not in session: return redirect(url_for('login'))
     if request.method == 'POST':
-        p = Product(name=request.form['name'], category=request.form['category'],
-                    buy_price=float(request.form['buy_price']), sell_price=float(request.form['sell_price']),
-                    stock=float(request.form['stock']), unit=request.form['unit'], user_id=session['user_id'])
+        p = Product(
+            name=request.form['name'], category=request.form['category'],
+            buy_price=float(request.form['buy_price']), sell_price=float(request.form['sell_price']),
+            stock=float(request.form['stock']), unit=request.form['unit'], 
+            user_id=session['user_id']
+        )
         db.session.add(p)
         db.session.commit()
         return redirect(url_for('ombor'))
     products = Product.query.filter_by(user_id=session['user_id']).all()
     return render_template('ombor.html', products=products)
 
-@app.route('/qarzlar')
-def qarzlar():
-    debts = Sale.query.filter(Sale.user_id == session['user_id'], Sale.debt_amount > 0).all()
-    return render_template('qarzlar.html', debts=debts)
-
-
-
-# Yangi model: Umumiy xarajatlar (ijara, svet, oylik va h.k.)
-class Expense(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column(db.String(200))
-    amount = db.Column(db.Float, default=0)
-    date = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-# ... (boshqa kodlar o'zgarishsiz qoladi) ...
+@app.route('/edit/<int:id>', methods=['POST'])
+def edit_product(id):
+    p = Product.query.get_or_404(id)
+    p.name = request.form['name']
+    p.category = request.form['category']
+    p.buy_price = float(request.form['buy_price'])
+    p.sell_price = float(request.form['sell_price'])
+    p.stock = float(request.form['stock'])
+    p.unit = request.form['unit']
+    db.session.commit()
+    return redirect(url_for('ombor'))
 
 @app.route('/hisobot')
 def hisobot():
     if 'user_id' not in session: return redirect(url_for('login'))
     uid = session['user_id']
-    
-    # Ma'lumotlarni olishda xato bo'lmasligi uchun bo'sh ro'yxat qaytarish
-    try:
-        sales = Sale.query.filter_by(user_id=uid).all()
-        expenses = Expense.query.filter_by(user_id=uid).all()
-        products = Product.query.filter_by(user_id=uid).all()
-    except:
-        # Agar baza yangilanmagan bo'lsa, bu yerda xato chiqadi
-        return "Baza yangilanmagan! Iltimos bazani o'chirib qayta yarating yoki Expense jadvalini qo'shing."
+    sales = Sale.query.filter_by(user_id=uid).all()
+    expenses = Expense.query.filter_by(user_id=uid).all()
+    products = Product.query.filter_by(user_id=uid).all()
 
-    total_sales = sum(s.total_price for s in sales) or 0
-    total_received = sum(s.paid_amount for s in sales) or 0
-    total_debt = sum(s.debt_amount for s in sales) or 0
-    gross_profit = sum(s.profit for s in sales) or 0
-    total_expenses = sum(e.amount for e in expenses) or 0
+    total_sales = sum(s.total_price for s in sales)
+    total_expenses = sum(e.amount for e in expenses)
+    gross_profit = sum(s.profit for s in sales)
     net_profit = gross_profit - total_expenses
-    stock_value = sum(p.stock * p.buy_price for p in products) or 0
+    stock_value = sum(p.stock * p.buy_price for p in products)
 
-    return render_template('hisobot.html', 
-                           sales=sales[::-1], 
-                           expenses=expenses[::-1],
-                           total_sales=total_sales,
-                           total_received=total_received,
-                           total_debt=total_debt,
-                           net_profit=net_profit,
-                           total_expenses=total_expenses,
-                           stock_value=stock_value)
+    return render_template('hisobot.html', sales=sales[::-1], expenses=expenses[::-1],
+                           total_sales=total_sales, net_profit=net_profit, 
+                           total_expenses=total_expenses, stock_value=stock_value)
 
-# Xarajat qo'shish uchun yo'nalish
 @app.route('/add_expense', methods=['POST'])
 def add_expense():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    desc = request.form.get('desc')
-    amt = float(request.form.get('amount') or 0)
-    if amt > 0:
-        new_exp = Expense(description=desc, amount=amt, user_id=session['user_id'])
-        db.session.add(new_exp)
-        db.session.commit()
+    new_exp = Expense(
+        description=request.form['desc'], 
+        amount=float(request.form['amount']), 
+        user_id=session['user_id']
+    )
+    db.session.add(new_exp)
+    db.session.commit()
     return redirect(url_for('hisobot'))
+
+@app.route('/qarzlar')
+def qarzlar():
+    debts = Sale.query.filter(Sale.user_id == session['user_id'], Sale.debt_amount > 0).all()
+    return render_template('qarzlar.html', debts=debts)
+
+@app.route('/pay_debt/<int:id>', methods=['POST'])
+def pay_debt(id):
+    s = Sale.query.get_or_404(id)
+    amt = float(request.form['pay_val'] or 0)
+    s.debt_amount = max(0, s.debt_amount - amt)
+    s.paid_amount += amt
+    db.session.commit()
+    return redirect(url_for('qarzlar'))
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     app.run(debug=True)
