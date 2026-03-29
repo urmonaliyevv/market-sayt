@@ -10,24 +10,33 @@
     </button>
 </div>
 
+<div class="card p-4 mb-4 border-0 shadow-sm">
+    <div class="input-group">
+        <span class="input-group-text bg-transparent border-0 pe-0">
+            <i class="bi bi-search text-muted"></i>
+        </span>
+        <input type="text" id="omborQidiruv" class="form-control border-0 fs-5" placeholder="Mahsulot nomi yoki kategoriya bo'yicha qidirish..." oninput="searchOmbor()">
+    </div>
+</div>
+
 <div class="card border-0 shadow-sm overflow-hidden">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle mb-0" id="omborTable">
             <thead style="background: #f4f7fe;">
                 <tr class="text-muted small fw-bold">
                     <th class="ps-4 py-3">MAHSULOT VA KATEGORIYA</th>
                     <th>KELISH NARXI</th>
                     <th>SOTISH NARXI</th>
                     <th>MIQDOR</th>
-                    <th class="pe-4 text-end">AMALLLAR</th>
+                    <th class="pe-4 text-end">AMALLAR</th>
                 </tr>
             </thead>
             <tbody>
                 {% for p in products %}
-                <tr>
+                <tr class="product-row">
                     <td class="ps-4">
-                        <div class="fw-bold text-dark">{{p.name}}</div>
-                        <span class="badge bg-light text-primary border-0">{{p.category or 'Kategoriyasiz'}}</span>
+                        <div class="fw-bold text-dark product-name">{{p.name}}</div>
+                        <span class="badge bg-light text-primary border-0 product-cat">{{p.category or 'Kategoriyasiz'}}</span>
                     </td>
                     <td class="text-muted">{{p.buy_price | format_money}}</td>
                     <td class="fw-bold text-dark">{{p.sell_price | format_money}}</td>
@@ -36,7 +45,6 @@
                             <span class="fw-bold {% if p.stock < 5 %}text-danger{% else %}text-dark{% endif %}">
                                 {{p.stock}} {{p.unit}}
                             </span>
-                            {% if p.stock < 5 %}<i class="bi bi-exclamation-triangle-fill text-danger small"></i>{% endif %}
                         </div>
                     </td>
                     <td class="pe-4 text-end">
@@ -50,53 +58,40 @@
             </tbody>
         </table>
     </div>
-</div>
-
-<div class="modal fade" id="modalYangi" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <form action="/ombor" method="POST" class="modal-content border-0" style="border-radius: 25px;">
-            <div class="modal-header border-0 p-4 pb-0">
-                <h5 class="fw-bold">Yangi resurs kiritish</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4 row g-3">
-                <div class="col-12"><input name="name" class="form-control rounded-input" placeholder="Mahsulot nomi" required></div>
-                <div class="col-6"><input name="category" class="form-control rounded-input" placeholder="Kategoriya"></div>
-                <div class="col-6"><input name="unit" class="form-control rounded-input" placeholder="Birligi (dona, kg)"></div>
-                <div class="col-6"><input type="number" step="any" name="buy_price" class="form-control rounded-input" placeholder="Kelish narxi" required></div>
-                <div class="col-6"><input type="number" step="any" name="sell_price" class="form-control rounded-input" placeholder="Sotish narxi" required></div>
-                <div class="col-12"><input type="number" step="any" name="stock" class="form-control rounded-input" placeholder="Dastlabki miqdor" required></div>
-            </div>
-            <div class="modal-footer border-0 p-4 pt-0">
-                <button type="submit" class="btn btn-primary w-100 py-3">BAZAGA QO'SHISH</button>
-            </div>
-        </form>
+    <div id="noResult" class="text-center py-5 d-none">
+        <i class="bi bi-search fs-1 text-muted opacity-25"></i>
+        <p class="text-muted mt-2">Bunday mahsulot topilmadi...</p>
     </div>
 </div>
 
-<div class="modal fade" id="modalEdit" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <form id="editForm" method="POST" class="modal-content border-0" style="border-radius: 25px;">
-            <div class="modal-header border-0 p-4 pb-0">
-                <h5 class="fw-bold text-primary">Ma'lumotlarni yangilash</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4 row g-3">
-                <div class="col-12"><input name="name" id="e_name" class="form-control rounded-input" required></div>
-                <div class="col-6"><input name="category" id="e_cat" class="form-control rounded-input"></div>
-                <div class="col-6"><input name="unit" id="e_unit" class="form-control rounded-input"></div>
-                <div class="col-6"><input type="number" step="any" name="buy_price" id="e_buy" class="form-control rounded-input" required></div>
-                <div class="col-6"><input type="number" step="any" name="sell_price" id="e_sell" class="form-control rounded-input" required></div>
-                <div class="col-12"><input type="number" step="any" name="stock" id="e_stock" class="form-control rounded-input" required></div>
-            </div>
-            <div class="modal-footer border-0 p-4 pt-0">
-                <button type="submit" class="btn btn-dark w-100 py-3" style="border-radius: 15px;">O'ZGARISHLARNI SAQLASH</button>
-            </div>
-        </form>
-    </div>
-</div>
+{% include 'modals_part.html' %} <script>
+function searchOmbor() {
+    let input = document.getElementById("omborQidiruv").value.toLowerCase();
+    let rows = document.querySelectorAll(".product-row");
+    let found = false;
 
-<script>
+    rows.forEach(row => {
+        let name = row.querySelector(".product-name").innerText.toLowerCase();
+        let cat = row.querySelector(".product-cat").innerText.toLowerCase();
+        
+        if (name.includes(input) || cat.includes(input)) {
+            row.style.display = "";
+            found = true;
+        } else {
+            row.style.display = "none";
+        }
+    });
+
+    // Agar hech narsa topilmasa xabar chiqarish
+    let noResult = document.getElementById("noResult");
+    if (found) {
+        noResult.classList.add("d-none");
+    } else {
+        noResult.classList.remove("d-none");
+    }
+}
+
+// openEdit funksiyasi...
 function openEdit(id, n, c, b, s, st, u) {
     document.getElementById('e_name').value = n;
     document.getElementById('e_cat').value = c;
@@ -105,7 +100,6 @@ function openEdit(id, n, c, b, s, st, u) {
     document.getElementById('e_stock').value = st;
     document.getElementById('e_unit').value = u;
     document.getElementById('editForm').action = '/edit/' + id;
-    // Bootstrap modalini JS orqali ochish
     var editModal = new bootstrap.Modal(document.getElementById('modalEdit'));
     editModal.show();
 }
