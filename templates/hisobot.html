@@ -1,48 +1,64 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2 class="fw-bold mb-4 text-dark">📊 Moliyaviy Hisobot</h2>
+<div class="mb-5">
+    <h2 class="fw-bold text-dark m-0">Analitik Markaz</h2>
+    <p class="text-muted m-0">Biznesingizning moliyaviy o'sish ko'rsatkichlari</p>
+</div>
 
 <div class="row g-4 mb-5">
     <div class="col-md-3">
-        <div class="card p-4 text-white" style="background: #4361ee;">
-            <small class="opacity-75 d-block mb-1">UMUMIY SAVDO</small>
-            <h3 class="fw-bold m-0">{{ total_sales | format_money }}</h3>
+        <div class="card p-4 border-0">
+            <div class="glass-icon mb-3"><i class="bi bi-graph-up-arrow fs-4"></i></div>
+            <small class="text-muted fw-bold d-block mb-1">UMUMIY TUSHUM</small>
+            <h3 class="fw-bold text-dark m-0">{{ total_sales | format_money }}</h3>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card p-4 text-white" style="background: #2ec4b6;">
-            <small class="opacity-75 d-block mb-1">SOF FOYDA</small>
-            <h3 class="fw-bold m-0">{{ net_profit | format_money }}</h3>
+        <div class="card p-4 border-0" style="border-left: 5px solid #2ec4b6 !important;">
+            <div class="glass-icon mb-3" style="background: rgba(46, 196, 182, 0.1); color: #2ec4b6;"><i class="bi bi-cash-stack fs-4"></i></div>
+            <small class="text-muted fw-bold d-block mb-1">SOF FOYDA</small>
+            <h3 class="fw-bold text-dark m-0">{{ net_profit | format_money }}</h3>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card p-4 text-white" style="background: #e71d36;">
-            <small class="opacity-75 d-block mb-1">XARAJATLAR</small>
-            <h3 class="fw-bold m-0">{{ total_expenses | format_money }}</h3>
+        <div class="card p-4 border-0" style="border-left: 5px solid #e71d36 !important;">
+            <div class="glass-icon mb-3" style="background: rgba(231, 29, 54, 0.1); color: #e71d36;"><i class="bi bi-wallet2 fs-4"></i></div>
+            <small class="text-muted fw-bold d-block mb-1">UMUMIY XARAJAT</small>
+            <h3 class="fw-bold text-dark m-0">{{ total_expenses | format_money }}</h3>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card p-4 text-white" style="background: #1a1d23;">
-            <small class="opacity-75 d-block mb-1">OMBOR QIYMATI</small>
-            <h3 class="fw-bold m-0">{{ stock_value | format_money }}</h3>
+        <div class="card p-4 border-0" style="border-left: 5px solid #ff9f1c !important;">
+            <div class="glass-icon mb-3" style="background: rgba(255, 159, 28, 0.1); color: #ff9f1c;"><i class="bi bi-safe fs-4"></i></div>
+            <small class="text-muted fw-bold d-block mb-1">OMBOR QIYMATI</small>
+            <h3 class="fw-bold text-dark m-0">{{ stock_value | format_money }}</h3>
         </div>
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-header bg-white border-0 py-3"><h5 class="fw-bold m-0">Savdolar Tarixi</h5></div>
+<div class="card border-0 shadow-sm overflow-hidden">
+    <div class="card-header bg-white p-4 border-0">
+        <h5 class="fw-bold m-0 text-dark">Oxirgi tranzaksiyalar</h5>
+    </div>
     <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="bg-light small">
-                <tr><th>SANA</th><th>MIJOZ</th><th>SUMMA</th><th class="text-success">FOYDA</th></tr>
+        <table class="table table-hover align-middle mb-0">
+            <thead style="background: #f4f7fe;">
+                <tr class="text-muted small fw-bold">
+                    <th class="ps-4">SANA</th>
+                    <th>MIJOZ</th>
+                    <th>MAHSULOTLAR</th>
+                    <th>SUMMA</th>
+                    <th class="pe-4 text-end">FOYDA</th>
+                </tr>
             </thead>
             <tbody>
                 {% for s in sales %}
                 <tr>
-                    <td>{{ s.date.strftime('%d.%m.%Y %H:%M') }}</td>
-                    <td class="fw-bold">{{ s.customer_name }}</td>
-                    <td>{{ s.total_price | format_money }}</td>
-                    <td class="text-success fw-bold">+{{ s.profit | format_money }}</td>
+                    <td class="ps-4 text-muted">{{ s.date.strftime('%d.%m.%Y | %H:%M') }}</td>
+                    <td class="fw-bold text-dark">{{ s.customer_name }}</td>
+                    <td class="small">{{ s.product_name }}...</td>
+                    <td class="fw-bold">{{ s.total_price | format_money }}</td>
+                    <td class="pe-4 text-end text-success fw-bold">+{{ s.profit | format_money }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
