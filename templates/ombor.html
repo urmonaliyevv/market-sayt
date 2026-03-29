@@ -40,13 +40,7 @@
                     </td>
                     <td class="text-muted">{{p.buy_price | format_money}}</td>
                     <td class="fw-bold text-dark">{{p.sell_price | format_money}}</td>
-                    <td>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="fw-bold {% if p.stock < 5 %}text-danger{% else %}text-dark{% endif %}">
-                                {{p.stock}} {{p.unit}}
-                            </span>
-                        </div>
-                    </td>
+                    <td><span class="fw-bold">{{p.stock}} {{p.unit}}</span></td>
                     <td class="pe-4 text-end">
                         <button class="btn btn-light btn-sm rounded-pill px-3 fw-bold" 
                                 onclick="openEdit('{{p.id}}','{{p.name}}','{{p.category}}','{{p.buy_price}}','{{p.sell_price}}','{{p.stock}}','{{p.unit}}')">
@@ -64,16 +58,59 @@
     </div>
 </div>
 
-{% include 'modals_part.html' %} <script>
+<div class="modal fade" id="modalYangi" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form action="/ombor" method="POST" class="modal-content border-0" style="border-radius: 25px;">
+            <div class="modal-header border-0 p-4 pb-0">
+                <h5 class="fw-bold">Yangi resurs kiritish</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 row g-3">
+                <div class="col-12"><input name="name" class="form-control rounded-input" placeholder="Mahsulot nomi" required></div>
+                <div class="col-6"><input name="category" class="form-control rounded-input" placeholder="Kategoriya"></div>
+                <div class="col-6"><input name="unit" class="form-control rounded-input" placeholder="Birligi (dona, kg)"></div>
+                <div class="col-6"><input type="number" step="any" name="buy_price" class="form-control rounded-input" placeholder="Kelish narxi" required></div>
+                <div class="col-6"><input type="number" step="any" name="sell_price" class="form-control rounded-input" placeholder="Sotish narxi" required></div>
+                <div class="col-12"><input type="number" step="any" name="stock" class="form-control rounded-input" placeholder="Dastlabki miqdor" required></div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="submit" class="btn btn-primary w-100 py-3">BAZAGA QO'SHISH</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEdit" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="editForm" method="POST" class="modal-content border-0" style="border-radius: 25px;">
+            <div class="modal-header border-0 p-4 pb-0">
+                <h5 class="fw-bold text-primary">Ma'lumotlarni yangilash</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 row g-3">
+                <input type="hidden" name="id" id="e_id">
+                <div class="col-12"><input name="name" id="e_name" class="form-control rounded-input" required></div>
+                <div class="col-6"><input name="category" id="e_cat" class="form-control rounded-input"></div>
+                <div class="col-6"><input name="unit" id="e_unit" class="form-control rounded-input"></div>
+                <div class="col-6"><input type="number" step="any" name="buy_price" id="e_buy" class="form-control rounded-input" required></div>
+                <div class="col-6"><input type="number" step="any" name="sell_price" id="e_sell" class="form-control rounded-input" required></div>
+                <div class="col-12"><input type="number" step="any" name="stock" id="e_stock" class="form-control rounded-input" required></div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="submit" class="btn btn-dark w-100 py-3" style="border-radius: 15px;">O'ZGARISHLARNI SAQLASH</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
 function searchOmbor() {
     let input = document.getElementById("omborQidiruv").value.toLowerCase();
     let rows = document.querySelectorAll(".product-row");
     let found = false;
-
     rows.forEach(row => {
         let name = row.querySelector(".product-name").innerText.toLowerCase();
         let cat = row.querySelector(".product-cat").innerText.toLowerCase();
-        
         if (name.includes(input) || cat.includes(input)) {
             row.style.display = "";
             found = true;
@@ -81,17 +118,9 @@ function searchOmbor() {
             row.style.display = "none";
         }
     });
-
-    // Agar hech narsa topilmasa xabar chiqarish
-    let noResult = document.getElementById("noResult");
-    if (found) {
-        noResult.classList.add("d-none");
-    } else {
-        noResult.classList.remove("d-none");
-    }
+    document.getElementById("noResult").classList.toggle("d-none", found);
 }
 
-// openEdit funksiyasi...
 function openEdit(id, n, c, b, s, st, u) {
     document.getElementById('e_name').value = n;
     document.getElementById('e_cat').value = c;
@@ -100,8 +129,7 @@ function openEdit(id, n, c, b, s, st, u) {
     document.getElementById('e_stock').value = st;
     document.getElementById('e_unit').value = u;
     document.getElementById('editForm').action = '/edit/' + id;
-    var editModal = new bootstrap.Modal(document.getElementById('modalEdit'));
-    editModal.show();
+    new bootstrap.Modal(document.getElementById('modalEdit')).show();
 }
 </script>
 {% endblock %}
